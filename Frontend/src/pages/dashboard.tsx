@@ -50,7 +50,7 @@ function Dashboard() {
   // Logout function
   function logout() {
     localStorage.removeItem("token");
-    navigate("/user/signin");
+    navigate("/");
   }
 
   useEffect(() => {
