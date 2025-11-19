@@ -20,21 +20,18 @@ export function TypeInput({
   };
 
   return (
-    <div className="flex w-full h-10 justify-center gap-4">
-      <div className="flex text-xl font-medium">Type :</div>
-      <select
-        ref={reference}
-        className="w-3/5 text-md p-2 text-gray-500 cursor-pointer items-center h-full border-2 rounded-md"
-        name="Type"
-        id="type"
-        value={type}
-        onChange={handleChange} // 🔥 Now properly handles updates
-      >
-        <option value="youtube">YouTube</option>
-        <option value="twitter">Twitter</option>
-        <option value="document">Document</option>
-        <option value="link">Link</option>
-      </select>
-    </div>
+    <select
+      ref={reference}
+      className="w-full px-4 py-3 text-sm text-gray-700 cursor-pointer border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all bg-white"
+      name="Type"
+      id="type"
+      value={type}
+      onChange={handleChange}
+    >
+      <option value="youtube">YouTube</option>
+      <option value="twitter">Twitter / X</option>
+      <option value="document">Document (PDF)</option>
+      <option value="link">Web Link</option>
+    </select>
   );
 }

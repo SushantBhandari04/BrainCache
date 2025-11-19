@@ -17,27 +17,33 @@ export function Card(props: CardProps) {
     const [shareModalOpen, setShareModalOpen] = useState(false);
     
     return (
-        <div className="flex flex-wrap flex-col gap-4 border-1 border-gray-200 shadow-xl h-fit w-72 rounded-md p-4">
+        <div className="group flex flex-col gap-4 border-2 border-gray-200 shadow-lg h-full w-full rounded-xl p-5 bg-white hover:shadow-xl hover:border-violet-300 transition-all duration-300">
             {/* Header with Icon and Actions */}
-            <div className="flex justify-between w-full font-medium text-gray-600">
-                <div className="flex items-center gap-2">
-                    {icon[props.type]}
-                    {props.title}
+            <div className="flex justify-between items-start w-full">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="flex-shrink-0 mt-0.5">
+                        {icon[props.type]}
+                    </div>
+                    <h3 className="font-semibold text-gray-900 break-words line-clamp-2 group-hover:text-violet-600 transition-colors">
+                        {props.title}
+                    </h3>
                 </div>
                 {!props.readOnly && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShareModalOpen(true);
                             }}
-                            className="text-gray-600 hover:text-gray-900"
+                            className="text-gray-500 hover:text-violet-600 transition-colors p-1.5 rounded-lg hover:bg-violet-50"
                             title="Share this content"
                         >
                             <ShareIcon size={4} color={"gray-600"} />
                         </button>
                         {props.onDelete && (
-                            <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
+                            <div className="p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                                <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
+                            </div>
                         )}
                     </div>
                 )}
@@ -52,14 +58,22 @@ export function Card(props: CardProps) {
             />
 
             {/* Content Section */}
-            <div className="w-full">
-                {props.type === "youtube" && <YouTubeEmbed link={props.link} />}
-                {props.type === "twitter" && <EmbedTweet tweetLink={props.link} />}
+            <div className="w-full flex-1 flex flex-col min-h-0">
+                {props.type === "youtube" && (
+                    <div className="flex-1 min-h-0">
+                        <YouTubeEmbed link={props.link} />
+                    </div>
+                )}
+                {props.type === "twitter" && (
+                    <div className="flex-1 min-h-0">
+                        <EmbedTweet tweetLink={props.link} />
+                    </div>
+                )}
                 
                 {props.type === "link" && (
-                    <div>
+                    <div className="p-4 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg border border-violet-200 flex-1 flex items-center">
                         <a
-                            className="text-violet-500 break-words block"
+                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-sm w-full"
                             target="_blank"
                             rel="noopener noreferrer"
                             href={props.link}
@@ -71,18 +85,21 @@ export function Card(props: CardProps) {
 
                 {/* ✅ Fixed PDF Viewer */}
                 {props.type === "document" && (
-                    <div className="w-full flex flex-col gap-2">
-                        <iframe
-                            src={props.link}
-                            className="w-full h-64 border rounded-md"
-                        />
+                    <div className="w-full flex flex-col gap-3 flex-1 min-h-0">
+                        <div className="flex-1 min-h-0">
+                            <iframe
+                                src={props.link}
+                                className="w-full h-full min-h-[300px] border-2 border-gray-200 rounded-lg shadow-sm"
+                            />
+                        </div>
                         <a
                             href={props.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-blue-500 hover:underline"
+                            className="text-violet-600 hover:text-violet-700 font-medium text-sm inline-flex items-center gap-2 hover:underline"
                         >
-                            Open PDF
+                            <DocumentIcon />
+                            <span>Open PDF in new tab</span>
                         </a>
                     </div>
                 )}

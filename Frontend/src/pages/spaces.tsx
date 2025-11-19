@@ -216,124 +216,187 @@ function SpacesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
-            <header className="flex items-center justify-between px-6 py-4 bg-white border-b border-gray-200">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/30 to-purple-50/30 flex flex-col">
+            <header className="sticky top-0 z-10 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
                 <Logo />
                 <div className="flex items-center gap-3">
-                    <div className="text-sm text-gray-500 pr-4">
-                        <div className="font-semibold text-gray-900">{plan === "pro" ? "Pro Plan" : "Free Plan"}</div>
-                        <div>{spaceCount}/{spaceLimit}{plan === "pro" ? "+" : ""} spaces used</div>
+                    <div className="text-sm pr-4 border-r border-gray-200">
+                        <div className={`font-semibold ${plan === "pro" ? "text-violet-600" : "text-gray-900"}`}>
+                            {plan === "pro" ? "✨ Pro Plan" : "Free Plan"}
+                        </div>
+                        <div className="text-gray-500 text-xs mt-0.5">
+                            {spaceCount}/{spaceLimit}{plan === "pro" ? "+" : ""} spaces
+                        </div>
                     </div>
                     {plan === "free" && (
                         <Button variant="secondary" size="md" title={upgradeButtonLabel} onClick={upgradePlan} disabled={upgradeDisabled} />
                     )}
-                    <Button variant="secondary" size="md" title="Back to Dashboard" onClick={() => navigate("/user/dashboard")} />
+                    <Button variant="secondary" size="md" title="Dashboard" onClick={() => navigate("/user/dashboard")} />
                     <Button variant="primary" size="md" title={formOpen ? "Close" : "New Space"} startIcon={<PlusIcon />} onClick={() => setFormOpen(prev => !prev)} disabled={plan !== "pro" && atLimit && !formOpen} />
                 </div>
             </header>
 
-            <main className="flex-1 px-6 py-8 max-w-6xl w-full mx-auto">
+            <main className="flex-1 px-6 py-8 max-w-7xl w-full mx-auto">
+                {/* Stats Cards */}
                 <section className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
                     {[
-                        { label: "Plan", value: plan === "pro" ? "Pro" : "Free" },
-                        { label: "Spaces", value: `${spaceCount}/${spaceLimit}${plan === "pro" ? "+" : ""}` },
-                        { label: "Upgrade", value: plan === "pro" ? "Active" : priceDisplay }
+                        { 
+                            label: "Current Plan", 
+                            value: plan === "pro" ? "Pro" : "Free",
+                            gradient: plan === "pro" ? "from-violet-500 to-purple-600" : "from-gray-400 to-gray-600"
+                        },
+                        { 
+                            label: "Spaces Used", 
+                            value: `${spaceCount}/${spaceLimit}${plan === "pro" ? "+" : ""}`,
+                            gradient: "from-indigo-500 to-blue-600"
+                        },
+                        { 
+                            label: "Upgrade", 
+                            value: plan === "pro" ? "Active" : priceDisplay,
+                            gradient: plan === "pro" ? "from-green-500 to-emerald-600" : "from-amber-500 to-orange-600"
+                        }
                     ].map((stat) => (
-                        <div key={stat.label} className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
-                            <p className="text-xs uppercase tracking-widest text-gray-500">{stat.label}</p>
-                            <p className="text-2xl font-semibold text-gray-900">{stat.value}</p>
+                        <div key={stat.label} className="group bg-white border border-gray-200/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5">
+                            <p className="text-xs uppercase tracking-wider text-gray-500 mb-2 font-medium">{stat.label}</p>
+                            <p className={`text-3xl font-bold bg-gradient-to-r ${stat.gradient} bg-clip-text text-transparent`}>
+                                {stat.value}
+                            </p>
                         </div>
                     ))}
                 </section>
 
+                {/* Upgrade Banner */}
                 {plan === "free" && paymentsConfigured && (
-                    <section className="mb-8 bg-white border border-indigo-100 rounded-3xl p-6 shadow-sm flex flex-wrap items-center gap-6">
-                        <div className="flex-1">
-                            <p className="text-xs uppercase tracking-widest text-indigo-500 font-semibold">BrainCache Pro</p>
-                            <h2 className="text-2xl font-semibold text-gray-900 mt-1">Upgrade for unlimited spaces & premium sharing</h2>
-                            <p className="text-sm text-gray-600 mt-2">One-time payment of {priceDisplay}. Keep every client, project, or hobby in its own workspace.</p>
-                            <ul className="mt-4 space-y-1 text-sm text-gray-600">
-                                <li>• Unlimited private / shared spaces</li>
-                                <li>• Priority share links (soon) & early beta access</li>
-                                <li>• Dedicated support from the BrainCache team</li>
-                            </ul>
-                        </div>
-                        <div className="flex flex-col gap-2 min-w-[200px]">
-                            <span className="text-xs uppercase tracking-wider text-gray-500">One-time</span>
-                            <span className="text-3xl font-semibold text-gray-900">{priceDisplay}</span>
-                            <Button variant="primary" size="md" title={upgradeButtonLabel} onClick={upgradePlan} disabled={upgradeDisabled} />
+                    <section className="mb-8 relative overflow-hidden bg-gradient-to-r from-violet-500 via-indigo-500 to-purple-600 rounded-3xl p-8 shadow-xl">
+                        <div className="absolute inset-0 opacity-20" style={{
+                            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+                        }}></div>
+                        <div className="relative z-10 flex flex-wrap items-center gap-8">
+                            <div className="flex-1 min-w-[280px]">
+                                <p className="text-xs uppercase tracking-widest text-violet-100 font-semibold mb-2">BrainCache Pro</p>
+                                <h2 className="text-3xl font-bold text-white mb-3">Unlock Unlimited Spaces</h2>
+                                <p className="text-violet-100 mb-4 text-sm leading-relaxed">
+                                    One-time payment of <span className="font-semibold text-white">{priceDisplay}</span>. Keep every client, project, or hobby in its own workspace.
+                                </p>
+                                <ul className="space-y-2 text-sm text-violet-50">
+                                    <li className="flex items-center gap-2">
+                                        <span className="text-violet-300">✓</span>
+                                        <span>Unlimited private & shared spaces</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="text-violet-300">✓</span>
+                                        <span>Priority share links & early beta access</span>
+                                    </li>
+                                    <li className="flex items-center gap-2">
+                                        <span className="text-violet-300">✓</span>
+                                        <span>Dedicated support from the BrainCache team</span>
+                                    </li>
+                                </ul>
+                            </div>
+                            <div className="flex flex-col gap-3 min-w-[220px] bg-white/10 backdrop-blur-sm rounded-2xl p-6 border border-white/20">
+                                <span className="text-xs uppercase tracking-wider text-violet-200 font-medium">One-time Payment</span>
+                                <span className="text-4xl font-bold text-white">{priceDisplay}</span>
+                                <Button 
+                                    variant="primary" 
+                                    size="md" 
+                                    title={upgradeButtonLabel} 
+                                    onClick={upgradePlan} 
+                                    disabled={upgradeDisabled}
+                                    className="bg-white text-violet-600 hover:bg-violet-50 active:bg-violet-100 mt-2"
+                                />
+                            </div>
                         </div>
                     </section>
                 )}
 
+                {/* Page Header */}
                 <div className="mb-8">
-                    <h1 className="text-3xl font-bold text-gray-900">Your Spaces</h1>
-                    <p className="text-gray-600 mt-2">Organize different brains for projects, teams, or themes.</p>
+                    <h1 className="text-4xl font-bold text-gray-900 mb-2">Your Spaces</h1>
+                    <p className="text-gray-600 text-lg">Organize different brains for projects, teams, or themes.</p>
                 </div>
 
+                {/* Messages */}
                 {error && (
-                    <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
-                        {error}
+                    <div className="mb-6 animate-in slide-in-from-top-2 text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-red-500 font-semibold">⚠</span>
+                            <span>{error}</span>
+                        </div>
                     </div>
                 )}
 
                 {upgradeMessage && (
-                    <div className="mb-4 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg p-3">
-                        {upgradeMessage}
+                    <div className="mb-6 animate-in slide-in-from-top-2 text-sm text-green-700 bg-green-50 border-l-4 border-green-400 rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-green-500 font-semibold">✓</span>
+                            <span>{upgradeMessage}</span>
+                        </div>
                     </div>
                 )}
 
                 {!paymentsConfigured && plan === "free" && (
-                    <div className="mb-6 rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
-                        Payments are not yet configured. Please contact support to upgrade to Pro.
+                    <div className="mb-6 rounded-xl bg-amber-50 border-l-4 border-amber-400 px-5 py-4 text-sm text-amber-900 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <span className="text-amber-600 font-semibold">ℹ</span>
+                            <span>Payments are not yet configured. Please contact support to upgrade to Pro.</span>
+                        </div>
                     </div>
                 )}
 
                 {plan === "free" && atLimit && (
-                    <div className="mb-6 rounded-xl bg-yellow-50 border border-yellow-200 px-4 py-3 text-sm text-yellow-900 flex items-center justify-between">
-                        <span>You've reached the {spaceLimit}-space limit on the free plan. Upgrade to Pro for unlimited spaces.</span>
+                    <div className="mb-6 rounded-xl bg-gradient-to-r from-yellow-50 to-amber-50 border-l-4 border-yellow-400 px-5 py-4 text-sm text-yellow-900 shadow-sm flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <span className="text-yellow-600 font-semibold">⚠</span>
+                            <span>You've reached the {spaceLimit}-space limit on the free plan. Upgrade to Pro for unlimited spaces.</span>
+                        </div>
                         <Button variant="primary" size="sm" title={upgradeButtonLabel} onClick={upgradePlan} disabled={upgradeDisabled} />
                     </div>
                 )}
 
-                
-                {plan === "pro" && (
-                    <div className="mb-8 rounded-2xl border border-green-200 bg-green-50 px-5 py-4 flex items-center justify-between">
+                {/* {plan === "pro" && (
+                    <div className="mb-8 rounded-2xl border-l-4 border-green-400 bg-gradient-to-r from-green-50 to-emerald-50 px-6 py-5 flex items-center justify-between shadow-sm">
                         <div>
-                            <p className="text-sm font-semibold text-green-800">Pro plan active</p>
-                            <p className="text-xs text-green-700">Enjoy unlimited spaces and premium sharing.</p>
+                            <p className="text-sm font-semibold text-green-800 flex items-center gap-2">
+                                <span>✨</span>
+                                <span>Pro plan active</span>
+                            </p>
+                            <p className="text-xs text-green-700 mt-1">Enjoy unlimited spaces and premium sharing.</p>
                         </div>
-                        <span className="text-sm font-semibold text-green-800">₹0 due</span>
+                        <span className="text-sm font-semibold text-green-800 bg-white/60 px-4 py-2 rounded-lg">₹0 due</span>
                     </div>
-                )}
+                )} */}
 
+                {/* Create Space Form */}
                 {formOpen && (
-                    <div className="mb-8 bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-                        <h2 className="text-xl font-semibold text-gray-900 mb-4">Create a new space</h2>
-                        <div className="space-y-4">
+                    <div className="mb-8 bg-white border border-gray-200 rounded-2xl shadow-lg p-8 animate-in slide-in-from-top-2">
+                        <h2 className="text-2xl font-semibold text-gray-900 mb-2">Create a new space</h2>
+                        <p className="text-sm text-gray-500 mb-6">Give your space a name and optional description to get started.</p>
+                        <div className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
                                 <input
                                     type="text"
-                                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="e.g. Growth Experiments"
+                                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                                    placeholder="e.g. Growth Experiments, Client Projects, Personal Notes"
                                     value={name}
                                     onChange={(e) => setName(e.target.value)}
                                     maxLength={60}
                                 />
+                                <p className="text-xs text-gray-400 mt-1">{name.length}/60 characters</p>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Description (optional)</label>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Description (optional)</label>
                                 <textarea
-                                    className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Describe what goes in this space."
+                                    className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
+                                    placeholder="Describe what goes in this space..."
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    rows={3}
+                                    rows={4}
                                     maxLength={240}
                                 />
+                                <p className="text-xs text-gray-400 mt-1">{description.length}/240 characters</p>
                             </div>
-                            <div className="flex justify-end gap-3">
+                            <div className="flex justify-end gap-3 pt-2">
                                 <Button variant="secondary" size="md" title="Cancel" onClick={() => { setFormOpen(false); setName(""); setDescription(""); }} />
                                 <Button variant="primary" size="md" title={submitting ? "Creating..." : "Create Space"} onClick={createSpace} disabled={submitting || !name.trim()} />
                             </div>
@@ -341,35 +404,70 @@ function SpacesPage() {
                     </div>
                 )}
 
+                {/* Spaces Grid */}
                 {loading ? (
-                    <div className="text-gray-500">Loading spaces...</div>
+                    <div className="flex items-center justify-center py-20">
+                        <div className="flex flex-col items-center gap-4">
+                            <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-500 rounded-full animate-spin"></div>
+                            <p className="text-gray-500 font-medium">Loading your spaces...</p>
+                        </div>
+                    </div>
                 ) : spaces.length === 0 ? (
-                    <div className="bg-white border border-dashed border-gray-300 rounded-xl p-10 text-center">
-                        <p className="text-gray-600 mb-4">No spaces yet. Create one to get started.</p>
-                        <Button variant="primary" size="md" title="Create Space" startIcon={<PlusIcon />} onClick={() => setFormOpen(true)} disabled={plan === "free" && atLimit} />
+                    <div className="bg-white border-2 border-dashed border-gray-300 rounded-2xl p-16 text-center">
+                        <div className="max-w-md mx-auto">
+                            <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+                                <PlusIcon className="size-10 text-violet-500" />
+                            </div>
+                            <h3 className="text-2xl font-semibold text-gray-900 mb-2">No spaces yet</h3>
+                            <p className="text-gray-600 mb-6">Create your first space to start organizing your content into separate workspaces.</p>
+                            <Button 
+                                variant="primary" 
+                                size="lg" 
+                                title="Create Your First Space" 
+                                startIcon={<PlusIcon />} 
+                                onClick={() => setFormOpen(true)} 
+                                disabled={plan === "free" && atLimit} 
+                            />
+                        </div>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                         {spaces.map((space) => (
-                            <div key={space._id} className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col justify-between">
+                            <div 
+                                key={space._id} 
+                                className="group bg-white border border-gray-200 rounded-2xl shadow-sm p-6 flex flex-col justify-between hover:shadow-lg hover:border-violet-300 transition-all duration-300 hover:-translate-y-1"
+                            >
                                 <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                        <h3 className="text-xl font-semibold text-gray-900 truncate">{space.name}</h3>
+                                    <div className="flex items-start justify-between mb-3">
+                                        <h3 className="text-xl font-bold text-gray-900 truncate flex-1 pr-2 group-hover:text-violet-600 transition-colors">
+                                            {space.name}
+                                        </h3>
                                         {space.shareHash && (
-                                            <span className="text-xs uppercase font-semibold text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                                            <span className="flex-shrink-0 text-xs uppercase font-semibold text-green-700 bg-green-100 px-3 py-1 rounded-full border border-green-200">
                                                 Shared
                                             </span>
                                         )}
                                     </div>
                                     {space.description ? (
-                                        <p className="text-sm text-gray-600 break-words">{space.description}</p>
+                                        <p className="text-sm text-gray-600 break-words leading-relaxed line-clamp-3">{space.description}</p>
                                     ) : (
                                         <p className="text-sm text-gray-400 italic">No description provided.</p>
                                     )}
                                 </div>
-                                <div className="mt-6 flex items-center gap-3">
-                                    <Button variant="primary" size="md" title="Open Space" onClick={() => openSpace(space._id)} />
-                                    <Button variant="secondary" size="md" title="Share" onClick={() => navigate(`/user/dashboard?spaceId=${space._id}&share=1`)} />
+                                <div className="mt-6 flex items-center gap-3 pt-4 border-t border-gray-100">
+                                    <Button 
+                                        variant="primary" 
+                                        size="md" 
+                                        title="Open Space" 
+                                        onClick={() => openSpace(space._id)}
+                                        className="flex-1"
+                                    />
+                                    <Button 
+                                        variant="secondary" 
+                                        size="md" 
+                                        title="Share" 
+                                        onClick={() => navigate(`/user/dashboard?spaceId=${space._id}&share=1`)}
+                                    />
                                 </div>
                             </div>
                         ))}

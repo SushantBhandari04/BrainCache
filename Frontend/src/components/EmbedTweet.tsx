@@ -6,16 +6,22 @@ interface EmbedTweetProps {
 }
 
 const EmbedTweet: React.FC<EmbedTweetProps> = ({ tweetLink }) => {
-  console.log(tweetLink);
-  const tweetId = tweetLink.split('/').pop(); // Extract the tweet ID from the link
-  console.log(tweetId)
+  const tweetId = tweetLink.split('/').pop()?.split('?')[0]; // Extract the tweet ID from the link
 
   if (!tweetId) {
-    return <p>Invalid tweet link</p>;
+    return (
+      <div className="w-full p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-red-600 text-sm">Invalid tweet link</p>
+      </div>
+    );
   }
 
   return (
-      <TwitterTweetEmbed tweetId={tweetId} />
+    <div className="w-full flex justify-center">
+      <div className="w-full max-w-[550px]">
+        <TwitterTweetEmbed tweetId={tweetId} />
+      </div>
+    </div>
   );
 };
 

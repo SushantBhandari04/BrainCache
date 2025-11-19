@@ -1,6 +1,6 @@
 import { Input } from "./Input";
 import { Button } from "./button";
-import { CrossIcon } from "./icons";
+import { CrossIcon, DocumentIcon } from "./icons";
 import { TypeInput } from "./TypeInput";
 import { Dispatch, SetStateAction, useRef, useState, useEffect, useCallback } from "react";
 import axios from "axios";
@@ -39,8 +39,27 @@ export function AddContentModal({
         }
     };
 
+    const handleClose = useCallback(() => {
+        // Reset form when closing
+        if (titleRef.current) titleRef.current.value = "";
+        if (linkRef.current) linkRef.current.value = "";
+        if (typeRef.current) typeRef.current.value = "youtube";
+        setSelectedType("youtube");
+        setFile(null);
+        setErrorMessage(null);
+        setOpen(false);
+    }, [setOpen]);
+
     const closeOnEsc = useCallback((e: KeyboardEvent) => {
-        if (e.key === "Escape") setOpen(false);
+        if (e.key === "Escape") {
+            if (titleRef.current) titleRef.current.value = "";
+            if (linkRef.current) linkRef.current.value = "";
+            if (typeRef.current) typeRef.current.value = "youtube";
+            setSelectedType("youtube");
+            setFile(null);
+            setErrorMessage(null);
+            setOpen(false);
+        }
     }, [setOpen]);
 
     useEffect(() => {
@@ -143,6 +162,13 @@ export function AddContentModal({
             });
 
             setContent(prev => [...prev, response.data.content]);
+            // Reset form
+            if (titleRef.current) titleRef.current.value = "";
+            if (linkRef.current) linkRef.current.value = "";
+            if (typeRef.current) typeRef.current.value = "youtube";
+            setSelectedType("youtube");
+            setFile(null);
+            setErrorMessage(null);
             setOpen(false);
         } catch (error) {
             console.error("Error saving content", error);
@@ -152,62 +178,129 @@ export function AddContentModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex justify-center items-center z-50 px-4" onClick={() => setOpen(false)}>
-            <div role="dialog" aria-modal="true" aria-labelledby="add-content-title" className="bg-white w-full max-w-lg border rounded-2xl p-6 shadow-2xl" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Enter' && !(uploading || submitting)) submit(); }}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4 animate-in fade-in" onClick={handleClose}>
+            <div 
+                role="dialog" 
+                aria-modal="true" 
+                aria-labelledby="add-content-title" 
+                className="bg-white w-full max-w-2xl border-2 border-gray-200 rounded-3xl p-8 shadow-2xl animate-in slide-in-from-bottom-4 max-h-[90vh] overflow-y-auto" 
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={(e) => { 
+                    if (e.key === 'Escape') handleClose();
+                    if (e.key === 'Enter' && !(uploading || submitting)) submit(); 
+                }}
+            >
                 {(uploading || submitting) && (
-                    <div className="mb-4 h-1 w-full bg-gray-100 overflow-hidden rounded">
-                        <div className="h-full w-1/3 bg-violet-500 animate-pulse rounded" />
+                    <div className="mb-6 h-1.5 w-full bg-gray-100 overflow-hidden rounded-full">
+                        <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 animate-pulse rounded-full" style={{ width: '60%' }} />
                     </div>
                 )}
-                <div className="flex items-start justify-between mb-4">
-                    <div className="mb-8">
-                        <div id="add-content-title" className="text-xl font-semibold">Add Content</div>
-                        <div className="text-xs text-gray-500 mt-1">Embed a link or upload a PDF.</div>
+                
+                <div className="flex items-start justify-between mb-6">
+                    <div>
+                        <h2 id="add-content-title" className="text-3xl font-bold text-gray-900 mb-2">Add Content</h2>
+                        <p className="text-sm text-gray-500">Embed links, upload PDFs, or save web content to your space.</p>
                     </div>
-                    <CrossIcon onClick={() => setOpen(false)} />
+                    <button
+                        onClick={handleClose}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0"
+                        aria-label="Close modal"
+                    >
+                        <CrossIcon onClick={() => {}} />
+                    </button>
                 </div>
 
-                <div className="mb-3 text-sm text-gray-600">
-                    Saving to: <span className="font-medium text-gray-900">{spaceName || "No space selected"}</span>
+                <div className="mb-6 px-4 py-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-xl border border-violet-200">
+                    <div className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-1">Saving to</div>
+                    <div className="text-sm font-semibold text-gray-900">{spaceName || "No space selected"}</div>
                 </div>
 
-                <div className="mt-4 flex flex-col gap-6">
-                    <Input reference={titleRef} placeholder="Add a clear title" title="Title : " />
+                <div className="flex flex-col gap-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Title <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                            ref={titleRef}
+                            type="text"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                            placeholder="e.g. React Best Practices, Important Article..."
+                        />
+                    </div>
 
-                    <div className="flex flex-col gap-2">
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Content Type <span className="text-red-500">*</span>
+                        </label>
                         <TypeInput 
                             reference={typeRef}
                             onChange={(e) => setSelectedType(e.target.value)}
                         />
-                        {/* <div className="text-[11px] text-gray-500">Choose the type of content you are adding.</div> */}
+                        <p className="text-xs text-gray-500 mt-2">
+                            Choose the type of content you're adding to help organize your space.
+                        </p>
                     </div>
 
-                    <div className="flex flex-col gap-1 mb-6">
-                        <Input 
-                            reference={linkRef} 
-                            placeholder={selectedType === 'document' ? "Optional: paste a document URL" : "Paste a link (YouTube, tweet, webpage)"} 
-                            title="Link : " 
+                    <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            Link {selectedType !== 'document' && <span className="text-red-500">*</span>}
+                            {selectedType === 'document' && <span className="text-gray-400 text-xs font-normal">(Optional)</span>}
+                        </label>
+                        <input
+                            ref={linkRef}
+                            type="text"
+                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                            placeholder={
+                                selectedType === 'document' 
+                                    ? "Optional: paste a document URL" 
+                                    : selectedType === 'youtube'
+                                    ? "https://www.youtube.com/watch?v=..."
+                                    : selectedType === 'twitter'
+                                    ? "https://twitter.com/username/status/..."
+                                    : "https://example.com/article"
+                            }
                         />
-                        {/* <div className="text-[11px] text-gray-500 pl-1">{selectedType === 'document' ? 'You can upload a PDF or provide its URL.' : 'Paste a valid URL for the selected type.'}</div> */}
+                        <p className="text-xs text-gray-500 mt-2">
+                            {selectedType === 'document' 
+                                ? 'You can upload a PDF below or provide a URL to an existing document.' 
+                                : `Paste a valid ${selectedType === 'youtube' ? 'YouTube' : selectedType === 'twitter' ? 'Twitter/X' : 'web'} URL.`}
+                        </p>
                     </div>
 
                     {selectedType === "document" && (
                         <div>
-                            <label className="text-gray-700 font-medium">Upload PDF</label>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Upload PDF <span className="text-gray-400 text-xs font-normal">(Max 10MB)</span>
+                            </label>
                             <div
-                                className={`mt-2 border-2 ${dragOver ? 'border-violet-400 bg-violet-50' : 'border-dashed border-gray-300'} rounded-xl p-5 text-center cursor-pointer transition-colors`}
+                                className={`mt-2 border-2 ${dragOver ? 'border-violet-500 bg-violet-50' : 'border-dashed border-gray-300'} rounded-xl p-8 text-center cursor-pointer transition-all hover:border-violet-400 hover:bg-violet-50/50`}
                                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                                 onDragLeave={() => setDragOver(false)}
                                 onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }}
                                 onClick={() => document.getElementById('pdf-input')?.click()}
                             >
-                                <div className="text-sm text-gray-600">Drag & drop your PDF here, or click to browse</div>
-                                {file && (
-                                    <div className="mt-3 flex items-center justify-center gap-3 text-sm">
-                                        <span className="truncate max-w-[220px] text-gray-800">{file.name}</span>
-                                        <span className="text-gray-400">·</span>
-                                        <span className="text-gray-600">{Math.round(file.size / 1024)} KB</span>
-                                        <button className="text-violet-600 underline" type="button" onClick={(e) => { e.stopPropagation(); setFile(null); }}>Remove</button>
+                                {!file ? (
+                                    <>
+                                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+                                            <DocumentIcon className="size-8 text-violet-600" />
+                                        </div>
+                                        <div className="text-sm font-medium text-gray-700 mb-1">Drag & drop your PDF here</div>
+                                        <div className="text-xs text-gray-500">or click to browse</div>
+                                    </>
+                                ) : (
+                                    <div className="flex flex-col items-center gap-3">
+                                        <div className="w-16 h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
+                                            <DocumentIcon className="size-8 text-green-600" />
+                                        </div>
+                                        <div className="text-sm font-semibold text-gray-800 truncate max-w-full">{file.name}</div>
+                                        <div className="text-xs text-gray-500">{Math.round(file.size / 1024)} KB</div>
+                                        <button 
+                                            className="text-sm text-violet-600 hover:text-violet-700 font-medium underline" 
+                                            type="button" 
+                                            onClick={(e) => { e.stopPropagation(); setFile(null); }}
+                                        >
+                                            Remove file
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -219,19 +312,29 @@ export function AddContentModal({
                                 onChange={handleFileChange}
                                 disabled={uploading || submitting}
                             />
-                            <div className="text-[11px] text-gray-500 mt-2">PDF files only.</div>
                         </div>
                     )}
 
                     {errorMessage && (
-                        <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">{errorMessage}</div>
+                        <div className="text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-4 shadow-sm">
+                            <div className="flex items-center gap-2">
+                                <span className="text-red-500 font-semibold">⚠</span>
+                                <span>{errorMessage}</span>
+                            </div>
+                        </div>
                     )}
                 </div>
 
-                <div className="mt-5 flex justify-end gap-3">
-                    <Button title="Cancel" variant="secondary" size="md" onClick={() => setOpen(false)} disabled={uploading || submitting} />
+                <div className="mt-8 flex justify-end gap-3 pt-6 border-t border-gray-200">
                     <Button 
-                        title={uploading || submitting ? "Saving..." : "Add"} 
+                        title="Cancel" 
+                        variant="secondary" 
+                        size="md" 
+                        onClick={handleClose} 
+                        disabled={uploading || submitting} 
+                    />
+                    <Button 
+                        title={uploading ? "Uploading..." : submitting ? "Saving..." : "Add Content"} 
                         variant="primary" 
                         size="md" 
                         onClick={submit} 

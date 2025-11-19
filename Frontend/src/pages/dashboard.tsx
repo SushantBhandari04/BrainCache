@@ -204,8 +204,8 @@ function Dashboard() {
   // Filter and search logic
   const filteredContent = useMemo(() => {
     return content.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          item.link.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.link.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesFilter = activeFilter === 'all' || item.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
@@ -220,28 +220,32 @@ function Dashboard() {
   ];
 
   return (
-    <div className="h-screen w-screen font-sans flex flex-col">
+    <div className="h-screen w-screen font-sans flex flex-col bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
       {/* Top Bar */}
-      <div className="flex justify-between items-center w-full h-fit py-4 bg-gray-100 px-6 border-b border-gray-200">
+      <div className="sticky top-0 z-20 flex justify-between items-center w-full h-fit py-4 bg-white/80 backdrop-blur-md px-6 border-b border-gray-200/50 shadow-sm">
         <Logo />
-        <div className="flex-1 max-w-xl mx-8">
+        <div className="flex-1 max-w-2xl mx-8">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
               <SearchIcon className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              placeholder="Search content..."
+              className="block w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-sm shadow-sm"
+              placeholder="Search content by title or link..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        <div className="flex gap-4">
-          <div className="hidden md:flex flex-col text-xs text-gray-500 mr-4">
-            <span className="font-semibold text-gray-800">{plan === "pro" ? "Pro Plan" : "Free Plan"}</span>
-            <span>{spaceCount}/{spaceLimit}{plan === "pro" ? "+" : ""} spaces used</span>
+        <div className="flex items-center gap-3">
+          <div className="hidden md:flex flex-col text-xs pr-4 border-r border-gray-200">
+            <span className={`font-semibold ${plan === "pro" ? "text-violet-600" : "text-gray-800"}`}>
+              {plan === "pro" ? "✨ Pro" : "Free Plan"}
+            </span>
+            <span className="text-gray-500 text-[10px] mt-0.5">
+              {spaceCount}/{spaceLimit}{plan === "pro" ? "+" : ""} spaces
+            </span>
           </div>
           {plan === "free" && (
             <Button
@@ -262,23 +266,16 @@ function Dashboard() {
           <Button
             variant="secondary"
             size="md"
-            title="Manage Spaces"
+            title="Spaces"
             onClick={() => navigate("/user/spaces")}
           />
           <Button
             variant="secondary"
             size="md"
-            title="Share Space"
+            title="Share"
             startIcon={<ShareIcon size={4} color="blue-600" />}
             onClick={() => setShareOpen(true)}
             disabled={!selectedSpaceId}
-          />
-          <Button
-            variant="danger"
-            size="md"
-            title="Logout"
-            startIcon={<LogoutIcon />}
-            onClick={logout}
           />
           <img
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -286,22 +283,61 @@ function Dashboard() {
             )}`}
             alt="Profile"
             title="Profile"
-            className="w-10 h-10 rounded-full cursor-pointer bg-red-500"
+            className="w-10 h-10 rounded-full cursor-pointer border-2 border-gray-200 hover:border-violet-400 transition-colors shadow-sm"
             onClick={() => navigate("/user/profile")}
+          />
+          <Button
+            variant="danger"
+            size="sm"
+            title="Logout"
+            startIcon={<LogoutIcon />}
+            onClick={logout}
           />
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-72 bg-gray-50 border-r border-gray-200 overflow-y-auto">
-          <div className="p-4 border-b border-gray-200">
-            <div className="flex items-center justify-between mb-3">
-              <h2 className="text-lg font-medium text-gray-900">Spaces</h2>
+        <div className="w-80 bg-white/60 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto shadow-sm">
+          <div className="p-5">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Content Types</h2>
+            <nav className="space-y-2">
+              {contentTypes.map((item) => {
+                const count = item.type === 'all'
+                  ? content.length
+                  : content.filter(c => c.type === item.type).length;
+                return (
+                  <button
+                    key={item.type}
+                    onClick={() => setActiveFilter(item.type)}
+                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${activeFilter === item.type
+                        ? 'bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-700 border-l-4 border-violet-500 shadow-sm'
+                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'
+                      }`}
+                  >
+                    <span className="truncate">{item.label}</span>
+                    <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${activeFilter === item.type
+                        ? 'bg-violet-100 text-violet-700'
+                        : 'bg-gray-100 text-gray-600'
+                      }`}>
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-gray-900">Spaces</h2>
               <button
-                className={`text-sm font-medium ${limitReached && !showSpaceForm ? "text-gray-400 cursor-not-allowed" : "text-blue-600 hover:underline"}`}
+                className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
+                    ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                    : "text-violet-600 hover:bg-violet-50 hover:text-violet-700"
+                  }`}
                 onClick={() => {
-                  if(limitReached && !showSpaceForm){
+                  if (limitReached && !showSpaceForm) {
                     setSpaceError("Upgrade to Pro to create more spaces.");
                     return;
                   }
@@ -309,126 +345,218 @@ function Dashboard() {
                 }}
                 disabled={limitReached && !showSpaceForm}
               >
-                {showSpaceForm ? "Close" : "New"}
+                {showSpaceForm ? "✕ Close" : "+ New"}
               </button>
             </div>
-            {spaceError && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2 mb-3">{spaceError}</div>}
+            {spaceError && (
+              <div className="text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-3 mb-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-red-500">⚠</span>
+                  <span>{spaceError}</span>
+                </div>
+              </div>
+            )}
             {showSpaceForm && (
-              <div className="mb-4 space-y-2">
+              <div className="mb-4 space-y-3 p-4 bg-white rounded-xl border-2 border-gray-200 shadow-sm">
                 <input
                   type="text"
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
                   placeholder="Space name"
                   value={newSpaceName}
                   onChange={(e) => setNewSpaceName(e.target.value)}
                   maxLength={60}
                 />
                 <textarea
-                  className="w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
                   placeholder="Description (optional)"
                   value={newSpaceDescription}
                   onChange={(e) => setNewSpaceDescription(e.target.value)}
                   maxLength={240}
                   rows={2}
                 />
-                <div className="flex justify-end gap-2">
+                <div className="flex justify-end gap-2 pt-1">
                   <Button variant="secondary" size="sm" title="Cancel" onClick={() => { setShowSpaceForm(false); setNewSpaceName(""); setNewSpaceDescription(""); }} />
                   <Button variant="primary" size="sm" title={creatingSpace ? "Creating..." : "Create"} onClick={handleCreateSpace} disabled={creatingSpace || !newSpaceName.trim()} />
                 </div>
               </div>
             )}
-            <div className="space-y-1">
+            <div className="space-y-2">
               {spacesLoading ? (
-                <div className="text-sm text-gray-500">Loading spaces...</div>
+                <div className="flex items-center justify-center py-8">
+                  <div className="flex flex-col items-center gap-2">
+                    <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-500 rounded-full animate-spin"></div>
+                    <span className="text-sm text-gray-500">Loading spaces...</span>
+                  </div>
+                </div>
               ) : spaces.length ? (
                 spaces.map((space) => (
                   <button
                     key={space._id}
                     onClick={() => handleSpaceSelect(space._id)}
-                    className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-lg border ${selectedSpaceId === space._id ? "border-blue-500 bg-blue-50 text-blue-900" : "border-transparent text-gray-700 hover:bg-white"}`}
+                    className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
+                        ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
+                        : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
+                      }`}
                   >
-                    <div className="flex-1 text-left">
-                      <div className="font-semibold truncate">{space.name}</div>
-                      {space.description && <div className="text-xs text-gray-500 truncate">{space.description}</div>}
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="font-semibold truncate mb-0.5">{space.name}</div>
+                      {space.description && (
+                        <div className="text-xs text-gray-500 truncate">{space.description}</div>
+                      )}
                     </div>
                     {space.shareHash && (
-                      <span className="text-[10px] uppercase tracking-wide text-green-600 font-semibold">Shared</span>
+                      <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold border border-green-200">
+                        Shared
+                      </span>
                     )}
                   </button>
                 ))
               ) : (
-                <div className="text-sm text-gray-500">No spaces yet.</div>
+                <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                  <p>No spaces yet.</p>
+                  <p className="text-xs mt-1">Create one to get started</p>
+                </div>
               )}
             </div>
           </div>
-          <div className="p-4">
-            <h2 className="text-lg font-medium text-gray-900 mb-4">Content Types</h2>
-            <nav className="space-y-1">
-              {contentTypes.map((item) => (
-                <button
-                  key={item.type}
-                  onClick={() => setActiveFilter(item.type)}
-                  className={`w-full flex items-center px-4 py-2 text-sm font-medium rounded-md ${
-                    activeFilter === item.type
-                      ? 'bg-blue-50 text-blue-700 border-l-4 border-blue-500'
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <span className="truncate">{item.label}</span>
-                  <span className="ml-auto inline-block py-0.5 px-2 text-xs rounded-full bg-gray-100">
-                    {item.type === 'all' 
-                      ? content.length 
-                      : content.filter(c => c.type === item.type).length}
-                  </span>
-                </button>
-              ))}
-            </nav>
-          </div>
+
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6">
-          <div className="mb-4">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {activeFilter === 'all' ? 'All Content' : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}
-              {searchQuery && ` matching "${searchQuery}"`}
-            </h1>
-            <p className="text-sm text-gray-500">
-              {filteredContent.length} {filteredContent.length === 1 ? 'item' : 'items'}
+        <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50/50 to-white">
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {activeFilter === 'all' ? 'All Content' : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}
+                {searchQuery && (
+                  <span className="text-xl font-normal text-gray-500 ml-2">
+                    matching "{searchQuery}"
+                  </span>
+                )}
+              </h1>
+              {selectedSpace && (
+                <div className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg border border-violet-200">
+                  <span className="text-sm font-semibold">{selectedSpace.name}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-600 flex items-center gap-2">
+              <span className="font-medium">{filteredContent.length}</span>
+              <span>{filteredContent.length === 1 ? 'item' : 'items'} found</span>
+              {searchQuery && (
+                <span className="text-gray-400">•</span>
+              )}
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="text-violet-600 hover:text-violet-700 font-medium text-xs underline"
+                >
+                  Clear search
+                </button>
+              )}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredContent.length > 0 ? (
-              filteredContent.map((item, index) => (
-                <Card
-                  onDelete={Delete}
-                  key={index}
-                  title={item.title}
-                  link={item.link}
-                  type={item.type}
-                  _id={item._id}
-                />
-              ))
-            ) : (
-              <div className="col-span-full flex flex-col items-center justify-center py-12 text-center">
-                <p className="text-gray-500 text-lg">
-                  {searchQuery 
-                    ? 'No content matches your search.'
-                    : activeFilter === 'all'
-                      ? 'No content added yet.'
-                      : `No ${activeFilter} content found.`}
-                </p>
-                <button
-                  onClick={() => setOpen(true)}
-                  className="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  Add Content
-                </button>
+          {!selectedSpaceId ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300">
+              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+                <span className="text-4xl">📁</span>
               </div>
-            )}
-          </div>
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Space Selected</h3>
+              <p className="text-gray-600 mb-6 max-w-md">
+                Select a space from the sidebar or create a new one to start adding content.
+              </p>
+              <Button
+                variant="primary"
+                size="md"
+                title="Create New Space"
+                startIcon={<PlusIcon />}
+                onClick={() => setShowSpaceForm(true)}
+              />
+            </div>
+          ) : (
+            <>
+              {filteredContent.length > 0 ? (
+                <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4 auto-rows-[minmax(180px,auto)]">
+                  {filteredContent.map((item, index) => {
+                    // Determine grid span classes based on content type and screen size
+                    let colSpanClasses = "";
+                    let rowSpanClasses = "row-span-1";
+
+                    if (item.type === "youtube") {
+                      // YouTube: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      rowSpanClasses = "row-span-2"; // Taller for video aspect ratio
+                    } else if (item.type === "twitter") {
+                      // Twitter: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      rowSpanClasses = "row-span-1";
+                    } else if (item.type === "document") {
+                      // Document: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      rowSpanClasses = "row-span-2"; // Taller for PDF viewer
+                    } else if (item.type === "link") {
+                      // Link: full width on mobile, 1 col on tablet, 1 col on lg, 2 cols on xl, 2 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2";
+                      rowSpanClasses = "row-span-1";
+                    } else {
+                      // Default fallback
+                      colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2";
+                      rowSpanClasses = "row-span-1";
+                    }
+
+                    return (
+                      <div
+                        key={index}
+                        className={`transform transition-all duration-300 hover:-translate-y-1 ${colSpanClasses} ${rowSpanClasses}`}
+                      >
+                        <Card
+                          onDelete={Delete}
+                          title={item.title}
+                          link={item.link}
+                          type={item.type}
+                          _id={item._id}
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300">
+                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                    {searchQuery ? (
+                      <SearchIcon className="h-10 w-10 text-gray-400" />
+                    ) : (
+                      <span className="text-4xl">📄</span>
+                    )}
+                  </div>
+                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                    {searchQuery
+                      ? 'No matches found'
+                      : activeFilter === 'all'
+                        ? 'No content yet'
+                        : `No ${activeFilter} content`}
+                  </h3>
+                  <p className="text-gray-600 mb-6 max-w-md">
+                    {searchQuery
+                      ? `No content matches "${searchQuery}". Try a different search term.`
+                      : activeFilter === 'all'
+                        ? 'Start building your knowledge base by adding your first piece of content.'
+                        : `You haven't added any ${activeFilter} content yet.`}
+                  </p>
+                  {!searchQuery && (
+                    <Button
+                      variant="primary"
+                      size="md"
+                      title="Add Content"
+                      startIcon={<PlusIcon />}
+                      onClick={() => setOpen(true)}
+                    />
+                  )}
+                </div>
+              )}
+            </>
+          )}
         </div>
       </div>
 
