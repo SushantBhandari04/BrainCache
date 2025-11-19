@@ -10,6 +10,12 @@ import { Logo } from "../components/Logo";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShareModal } from "../components/ShareModal";
 
+declare global {
+  interface Window {
+    Razorpay?: any;
+  }
+}
+
 export type Type = "youtube" | "twitter" | "document" | "link";
 
 type Space = {
@@ -37,6 +43,12 @@ function Dashboard() {
   const [plan, setPlan] = useState<"free" | "pro">("free");
   const [spaceLimit, setSpaceLimit] = useState(3);
   const [spaceCount, setSpaceCount] = useState(0);
+  const [upgrading, setUpgrading] = useState(false);
+  const [priceDisplay, setPriceDisplay] = useState("₹499");
+  const [priceCurrency, setPriceCurrency] = useState("INR");
+  const [paymentsConfigured, setPaymentsConfigured] = useState(false);
+  const [razorpayReady, setRazorpayReady] = useState(false);
+  const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpaceQueryRef = useRef<string | null>(searchParams.get("spaceId"));
@@ -93,6 +105,12 @@ function Dashboard() {
   }
 
   const limitReached = plan !== "pro" && spaceCount >= spaceLimit;
+  const upgradeButtonLabel = upgrading
+    ? "Processing..."
+    : plan === "free"
+      ? (paymentsConfigured ? `Upgrade (${priceDisplay})` : "Upgrade")
+      : "Upgrade";
+  const upgradeDisabled = upgrading || !paymentsConfigured || !razorpayReady;
 
   async function fetchSpaces() {
     setSpacesLoading(true);
@@ -107,6 +125,11 @@ function Dashboard() {
       setPlan(res.data.plan || "free");
       setSpaceLimit(res.data.limit || 3);
       setSpaceCount(res.data.currentCount || fetchedSpaces.length);
+      if (res.data.price) {
+        setPriceDisplay(res.data.price.display || `₹${((res.data.price.amount || 0) / 100).toFixed(0)}`);
+        setPriceCurrency(res.data.price.currency || "INR");
+      }
+      setPaymentsConfigured(!!res.data.paymentsConfigured);
       const preferredSpaceId = initialSpaceQueryRef.current;
       if (preferredSpaceId && fetchedSpaces.some((s) => s._id === preferredSpaceId)) {
         setSelectedSpaceId(preferredSpaceId);
@@ -185,6 +208,42 @@ function Dashboard() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+    const scriptUrl = "https://checkout.razorpay.com/v1/checkout.js";
+    let script = document.querySelector(`script[src="${scriptUrl}"]`) as HTMLScriptElement | null;
+    const handleLoad = () => setRazorpayReady(true);
+
+    if (script) {
+      if (script.getAttribute("data-loaded") === "true") {
+        setRazorpayReady(true);
+      } else {
+        script.addEventListener("load", handleLoad);
+      }
+      return () => {
+        script?.removeEventListener("load", handleLoad);
+      };
+    }
+
+    script = document.createElement("script");
+    script.src = scriptUrl;
+    script.async = true;
+    script.setAttribute("data-loaded", "false");
+    script.onload = () => {
+      script?.setAttribute("data-loaded", "true");
+      setRazorpayReady(true);
+    };
+    script.onerror = () => setSpaceError("Unable to load payment gateway. Please refresh and try again.");
+    document.body.appendChild(script);
+
+    return () => {
+      if (script) {
+        script.onload = null;
+        script.onerror = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     if (selectedSpaceId) {
       getContent(selectedSpaceId);
     }
@@ -200,6 +259,79 @@ function Dashboard() {
       window.history.replaceState(null, "", `${window.location.pathname}${newSearch ? `?${newSearch}` : ""}`);
     }
   }, [selectedSpaceId]);
+
+  async function upgradePlan() {
+    if (!paymentsConfigured) {
+      setSpaceError("Payments are currently unavailable. Please try again later.");
+      return;
+    }
+    if (!razorpayReady || !window.Razorpay) {
+      setSpaceError("Payment gateway is still loading. Please wait a moment and try again.");
+      return;
+    }
+    setUpgrading(true);
+    setSpaceError(null);
+    setUpgradeMessage(null);
+    try {
+      const token = localStorage.getItem("token") || "";
+      const checkout = await axios.post(`${BACKEND_URL}/api/v1/subscription/checkout`, {}, {
+        headers: { Authorization: token }
+      });
+
+      const options = {
+        key: checkout.data.keyId,
+        amount: checkout.data.amount,
+        currency: checkout.data.currency || priceCurrency,
+        name: "BrainCache Pro",
+        description: checkout.data.description || "Unlock unlimited spaces & premium features",
+        order_id: checkout.data.orderId,
+        notes: checkout.data.notes || { plan: "pro" },
+        prefill: {
+          name: checkout.data.customer?.name,
+          email: checkout.data.customer?.email,
+          contact: checkout.data.customer?.contact
+        },
+        theme: {
+          color: "#6366f1"
+        },
+        modal: {
+          ondismiss: () => {
+            setUpgrading(false);
+          }
+        },
+        handler: async (response: any) => {
+          try {
+            await axios.post(`${BACKEND_URL}/api/v1/subscription/confirm`, {
+              orderId: response.razorpay_order_id,
+              paymentId: response.razorpay_payment_id,
+              signature: response.razorpay_signature
+            }, {
+              headers: { Authorization: token }
+            });
+            setUpgradeMessage("Payment successful! Welcome to the Pro plan.");
+            await fetchSpaces();
+          } catch (err) {
+            console.error(err);
+            setSpaceError("Payment captured but subscription update failed. Please contact support with your payment reference.");
+          } finally {
+            setUpgrading(false);
+          }
+        }
+      };
+
+      const razorpay = new window.Razorpay(options);
+      razorpay.on("payment.failed", (resp: any) => {
+        setUpgradeMessage(null);
+        setSpaceError(resp?.error?.description || "Payment failed. Please try again.");
+        setUpgrading(false);
+      });
+      razorpay.open();
+    } catch (e: any) {
+      const message = e?.response?.data?.message || "Unable to start payment. Please try again.";
+      setSpaceError(message);
+      setUpgrading(false);
+    }
+  }
 
   // Filter and search logic
   const filteredContent = useMemo(() => {
@@ -251,8 +383,9 @@ function Dashboard() {
             <Button
               variant="secondary"
               size="md"
-              title="Upgrade"
-              onClick={() => navigate("/user/spaces")}
+              title={upgradeButtonLabel}
+              onClick={upgradePlan}
+              disabled={upgradeDisabled}
             />
           )}
           <Button
@@ -353,6 +486,22 @@ function Dashboard() {
                 <div className="flex items-center gap-2">
                   <span className="text-red-500">⚠</span>
                   <span>{spaceError}</span>
+                </div>
+              </div>
+            )}
+            {upgradeMessage && (
+              <div className="text-sm text-green-700 bg-green-50 border-l-4 border-green-400 rounded-lg p-3 mb-4 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-green-500">✓</span>
+                  <span>{upgradeMessage}</span>
+                </div>
+              </div>
+            )}
+            {!paymentsConfigured && plan === "free" && (
+              <div className="mb-4 rounded-xl bg-amber-50 border-l-4 border-amber-400 px-4 py-3 text-sm text-amber-900 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-amber-600 font-semibold">ℹ</span>
+                  <span>Payments are not yet configured. Please contact support to upgrade to Pro.</span>
                 </div>
               </div>
             )}

@@ -479,8 +479,6 @@ app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)
         })
     }
 })
-
-
 app.post("/api/v1/brain/share", UserMiddleware, async (req,res)=>{
     const user = req.user;
     if(!user){
@@ -563,7 +561,7 @@ app.post("/api/v1/subscription/checkout", UserMiddleware, async (req: Request, r
         return;
     }
     try{
-        const receipt = `sub_${user._id}_${Date.now()}`;
+        const receipt = `sub_${user._id.toString().slice(-8)}_${Date.now().toString().slice(-6)}`;
         const notes = {
             userId: user._id.toString(),
             username: user.username || "",
@@ -643,8 +641,9 @@ app.post("/api/v1/subscription/confirm", UserMiddleware, async (req: Request, re
     });
 });
 
+// ... (rest of the code remains the same)
 
-app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req,res)=>{
+app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Response)=>{
     const hash = req.params.shareLink;
 
     const link = await LinkModel.findOne({hash});
@@ -667,7 +666,7 @@ app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req,res)=>{
 })
 
 // Check or update sharing status for a specific content item
-app.get("/api/v1/content/:id/share", UserMiddleware, async (req, res) => {
+app.get("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: Response) => {
     try {
         const contentId = req.params.id;
         const userId = req.user._id;
@@ -693,7 +692,7 @@ app.get("/api/v1/content/:id/share", UserMiddleware, async (req, res) => {
 });
 
 // Enable/disable sharing for a specific content item
-app.post("/api/v1/content/:id/share", UserMiddleware, async (req, res) => {
+app.post("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: Response) => {
     try {
         const contentId = req.params.id;
         const userId = req.user._id;
@@ -735,7 +734,7 @@ app.post("/api/v1/content/:id/share", UserMiddleware, async (req, res) => {
 });
 
 // Get shared content by hash
-app.get("/api/v1/content/share/:hash", async (req, res) => {
+app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
     try {
         const { hash } = req.params;
         
@@ -773,7 +772,7 @@ app.get("/api/v1/content/share/:hash", async (req, res) => {
 });
 
 // Original brain sharing endpoint (kept for backward compatibility)
-app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req, res) => {
+app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Response) => {
     const hash = req.params.shareLink;
 
     const link = await LinkModel.findOne({ hash });
