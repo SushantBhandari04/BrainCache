@@ -10,10 +10,14 @@ import { ObjectId } from "mongodb";
 
 export function AddContentModal({ 
     setOpen, 
-    setContent 
+    setContent,
+    spaceId,
+    spaceName
 }: { 
     setOpen: (prop: boolean) => void, 
-    setContent: Dispatch<SetStateAction<{ title: string; link: string; type: Type; _id: ObjectId }[]>>
+    setContent: Dispatch<SetStateAction<{ title: string; link: string; type: Type; _id: ObjectId }[]>>,
+    spaceId: string | null,
+    spaceName?: string
 }) {
     const titleRef = useRef<HTMLInputElement | null>(null);
     const linkRef = useRef<HTMLInputElement | null>(null);
@@ -94,6 +98,11 @@ export function AddContentModal({
     async function submit() {
         if (!validate()) return;
 
+        if(!spaceId){
+            setErrorMessage("No space selected. Please pick a space before adding content.");
+            return;
+        }
+
         let fileUrl = linkRef.current?.value?.trim() || "";
 
         setSubmitting(true);
@@ -125,7 +134,8 @@ export function AddContentModal({
             const response = await axios.post(`${BACKEND_URL}/api/v1/content`, {
                 title: titleRef.current?.value?.trim() || file?.name,
                 link: fileUrl,
-                type: selectedType
+                type: selectedType,
+                spaceId
             }, {
                 headers: {
                     Authorization: localStorage.getItem("token")
@@ -155,6 +165,10 @@ export function AddContentModal({
                         <div className="text-xs text-gray-500 mt-1">Embed a link or upload a PDF.</div>
                     </div>
                     <CrossIcon onClick={() => setOpen(false)} />
+                </div>
+
+                <div className="mb-3 text-sm text-gray-600">
+                    Saving to: <span className="font-medium text-gray-900">{spaceName || "No space selected"}</span>
                 </div>
 
                 <div className="mt-4 flex flex-col gap-6">

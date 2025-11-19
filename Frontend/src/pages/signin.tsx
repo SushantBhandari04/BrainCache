@@ -45,7 +45,7 @@ function Signin() {
       if (response.status === 200) {
         localStorage.setItem("token", response.data.token);
         setGeneralMessage("✅ Signed in successfully! Redirecting...");
-        setTimeout(() => navigate("/user/dashboard"), 1500);
+        setTimeout(() => navigate("/user/spaces"), 1000);
       } else {
         handleErrors(response.data.message);
       }
