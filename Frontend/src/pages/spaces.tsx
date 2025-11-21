@@ -5,6 +5,7 @@ import { Logo } from "../components/Logo";
 import { Button } from "../components/button";
 import { PlusIcon } from "../components/icons";
 import { useNavigate } from "react-router-dom";
+import { CreateSpaceModal } from "../components/CreateSpaceModal";
 
 declare global {
     interface Window {
@@ -24,8 +25,6 @@ function SpacesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [formOpen, setFormOpen] = useState(false);
-    const [name, setName] = useState("");
-    const [description, setDescription] = useState("");
     const [submitting, setSubmitting] = useState(false);
     const [plan, setPlan] = useState<"free" | "pro">("free");
     const [spaceLimit, setSpaceLimit] = useState<number>(3);
@@ -112,8 +111,7 @@ function SpacesPage() {
         };
     }, []);
 
-    async function createSpace() {
-        if (!name.trim()) return;
+    async function createSpace(name: string, description: string) {
         if (atLimit) {
             setError("You've reached the space limit for the free plan. Upgrade to create more.");
             return;
@@ -129,8 +127,6 @@ function SpacesPage() {
                 headers: { Authorization: token }
             });
             setSpaces(prev => [...prev, res.data.space]);
-            setName("");
-            setDescription("");
             setFormOpen(false);
             setSpaceCount(prev => prev + 1);
         } catch (e: any) {
@@ -269,33 +265,33 @@ function SpacesPage() {
                 </div>
             </header>
 
-            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Status Messages */}
                 {error && (
-                    <div className="mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800">
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">Error:</span>
-                            <span>{error}</span>
+                    <div className="mb-4 md:mb-6 rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-800 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-start gap-2">
+                            <span className="font-medium flex-shrink-0">Error:</span>
+                            <span className="flex-1">{error}</span>
                         </div>
                     </div>
                 )}
 
                 {upgradeMessage && (
-                    <div className="mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800">
-                        <div className="flex items-center gap-2">
-                            <span className="font-medium">Success:</span>
-                            <span>{upgradeMessage}</span>
+                    <div className="mb-4 md:mb-6 rounded-lg bg-green-50 border border-green-200 px-4 py-3 text-sm text-green-800 animate-in fade-in slide-in-from-top-2">
+                        <div className="flex items-start gap-2">
+                            <span className="font-medium flex-shrink-0">Success:</span>
+                            <span className="flex-1">{upgradeMessage}</span>
                         </div>
                     </div>
                 )}
 
                 {/* Overview Section */}
-                <div className="mb-8">
-                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <div className="mb-6 md:mb-8">
+                    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 md:p-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 md:mb-6">
                             <div>
-                                <h1 className="text-2xl font-semibold text-gray-900 mb-1">Spaces</h1>
-                                <p className="text-sm text-gray-600">
+                                <h1 className="text-xl md:text-2xl font-semibold text-gray-900 mb-1">Spaces</h1>
+                                <p className="text-xs md:text-sm text-gray-600">
                                     Organize your content into dedicated workspaces
                                 </p>
                             </div>
@@ -320,10 +316,10 @@ function SpacesPage() {
                         </div>
 
                         {/* Usage Stats */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Plan</div>
-                                <div className="text-lg font-semibold text-gray-900">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                            <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Plan</div>
+                                <div className="text-base md:text-lg font-semibold text-gray-900">
                                     {plan === "pro" ? (
                                         <span className="text-indigo-600">Pro Plan</span>
                                     ) : (
@@ -331,15 +327,15 @@ function SpacesPage() {
                                     )}
                                 </div>
                             </div>
-                            <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Spaces</div>
-                                <div className="text-lg font-semibold text-gray-900">
+                            <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Spaces</div>
+                                <div className="text-base md:text-lg font-semibold text-gray-900">
                                     {spaceCount} {plan === "pro" ? "" : `of ${spaceLimit}`}
                                 </div>
                             </div>
-                            <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Shared</div>
-                                <div className="text-lg font-semibold text-gray-900">{sharedSpaces}</div>
+                            <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Shared</div>
+                                <div className="text-base md:text-lg font-semibold text-gray-900">{sharedSpaces}</div>
                             </div>
                         </div>
 
@@ -362,45 +358,45 @@ function SpacesPage() {
                 </div>
 
                 {/* Upgrade Banner - Only for Free Plan */}
-                {plan === "free" && paymentsConfigured && (
-                    <div className="mb-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-6 shadow-lg">
+                {/* {plan === "free" && paymentsConfigured && (
+                    <div className="mb-6 md:mb-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 md:p-6 shadow-lg">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                             <div className="flex-1">
-                                <h2 className="text-xl font-semibold mb-2">Upgrade to Pro</h2>
-                                <p className="text-sm text-indigo-100 mb-3">
+                                <h2 className="text-lg md:text-xl font-semibold mb-2">Upgrade to Pro</h2>
+                                <p className="text-xs md:text-sm text-indigo-100 mb-3">
                                     Unlock unlimited spaces and premium features for {priceDisplay}
                                 </p>
-                                <ul className="text-sm text-indigo-100 space-y-1">
+                                <ul className="text-xs md:text-sm text-indigo-100 space-y-1">
                                     <li className="flex items-center gap-2">
-                                        <span>✓</span>
+                                        <span className="text-green-300">✓</span>
                                         <span>Unlimited spaces</span>
                                     </li>
                                     <li className="flex items-center gap-2">
-                                        <span>✓</span>
+                                        <span className="text-green-300">✓</span>
                                         <span>Priority support</span>
                                     </li>
                                 </ul>
                             </div>
-                            <div className="flex flex-col items-end gap-2">
-                                <div className="text-3xl font-bold">{priceDisplay}</div>
+                            <div className="flex flex-col sm:items-end gap-2">
+                                <div className="text-2xl md:text-3xl font-bold">{priceDisplay}</div>
                                 <Button 
                                     variant="secondary" 
                                     size="md" 
                                     title={upgradeButtonLabel} 
                                     onClick={upgradePlan} 
                                     disabled={upgradeDisabled}
-                                    className="bg-white text-indigo-600 hover:bg-gray-50"
+                                    className="bg-white text-indigo-600 hover:bg-gray-50 w-full sm:w-auto"
                                 />
                             </div>
                         </div>
                     </div>
-                )}
+                )} */}
 
                 {/* Limit Warning */}
                 {plan === "free" && atLimit && (
-                    <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
-                        <div className="flex items-center justify-between gap-4">
-                            <span>You've reached the {spaceLimit}-space limit. Upgrade to Pro for unlimited spaces.</span>
+                    <div className="mb-4 md:mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <span className="flex-1">You've reached the {spaceLimit}-space limit. Upgrade to Pro for unlimited spaces.</span>
                             {paymentsConfigured && (
                                 <Button 
                                     variant="primary" 
@@ -408,63 +404,21 @@ function SpacesPage() {
                                     title={upgradeButtonLabel} 
                                     onClick={upgradePlan} 
                                     disabled={upgradeDisabled}
+                                    className="w-full sm:w-auto"
                                 />
                             )}
                         </div>
                     </div>
                 )}
 
-                {/* Create Space Form */}
-                {formOpen && (
-                    <div className="mb-8 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                        <h2 className="text-lg font-semibold text-gray-900 mb-4">Create New Space</h2>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Name <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="text"
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
-                                    placeholder="Enter space name"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    maxLength={60}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">{name.length}/60</p>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1.5">
-                                    Description <span className="text-gray-400">(optional)</span>
-                                </label>
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition resize-none"
-                                    placeholder="Add a description"
-                                    value={description}
-                                    onChange={(e) => setDescription(e.target.value)}
-                                    rows={3}
-                                    maxLength={240}
-                                />
-                                <p className="text-xs text-gray-500 mt-1">{description.length}/240</p>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <Button 
-                                    variant="secondary" 
-                                    size="md" 
-                                    title="Cancel" 
-                                    onClick={() => { setFormOpen(false); setName(""); setDescription(""); }} 
-                                />
-                                <Button 
-                                    variant="primary" 
-                                    size="md" 
-                                    title={submitting ? "Creating..." : "Create Space"} 
-                                    onClick={createSpace} 
-                                    disabled={submitting || !name.trim()} 
-                                />
-                            </div>
-                        </div>
-                    </div>
-                )}
+                {/* Create Space Modal */}
+                <CreateSpaceModal
+                    open={formOpen}
+                    onClose={() => setFormOpen(false)}
+                    onSubmit={createSpace}
+                    submitting={submitting}
+                    atLimit={atLimit}
+                />
 
                 {/* Spaces Grid */}
                 {loading ? (
@@ -475,13 +429,13 @@ function SpacesPage() {
                         </div>
                     </div>
                 ) : spaces.length === 0 ? (
-                    <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-12 text-center">
+                    <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 md:p-12 text-center">
                         <div className="max-w-sm mx-auto">
-                            <div className="w-16 h-16 mx-auto mb-4 bg-gray-100 rounded-xl flex items-center justify-center">
-                                <PlusIcon className="w-8 h-8 text-gray-400" />
+                            <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 bg-gray-100 rounded-xl flex items-center justify-center">
+                                <PlusIcon className="w-7 h-7 md:w-8 md:h-8 text-gray-400" />
                             </div>
-                            <h3 className="text-lg font-semibold text-gray-900 mb-2">No spaces yet</h3>
-                            <p className="text-sm text-gray-600 mb-6">
+                            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No spaces yet</h3>
+                            <p className="text-xs md:text-sm text-gray-600 mb-6">
                                 Create your first space to start organizing your content.
                             </p>
                             <Button 
@@ -495,27 +449,27 @@ function SpacesPage() {
                         </div>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                         {spaces.map((space) => (
                             <div 
                                 key={space._id} 
-                                className="bg-white border border-gray-200 rounded-lg p-5 hover:shadow-md hover:border-indigo-300 transition-all duration-200 flex flex-col"
+                                className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col group"
                             >
                                 <div className="flex-1">
-                                    <div className="flex items-start justify-between mb-3">
-                                        <h3 className="text-lg font-semibold text-gray-900 truncate flex-1 pr-2">
+                                    <div className="flex items-start justify-between mb-3 gap-2">
+                                        <h3 className="text-base md:text-lg font-semibold text-gray-900 truncate flex-1 pr-2 group-hover:text-indigo-600 transition-colors">
                                             {space.name}
                                         </h3>
                                         {space.shareHash && (
-                                            <span className="flex-shrink-0 text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded border border-green-200">
+                                            <span className="flex-shrink-0 text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
                                                 Shared
                                             </span>
                                         )}
                                     </div>
                                     {space.description ? (
-                                        <p className="text-sm text-gray-600 line-clamp-2 mb-4">{space.description}</p>
+                                        <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-4">{space.description}</p>
                                     ) : (
-                                        <p className="text-sm text-gray-400 italic mb-4">No description</p>
+                                        <p className="text-xs md:text-sm text-gray-400 italic mb-4">No description</p>
                                     )}
                                 </div>
                                 <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
