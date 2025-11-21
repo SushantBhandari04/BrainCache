@@ -6,14 +6,14 @@ import { Types } from "mongoose";
 const app = express();
 app.use(express.json());
 import jwt from "jsonwebtoken"
-import { JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PRO_PLAN_PRICE_INR, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY, EMAIL_FROM, OTP_EXPIRY_MINUTES, OTP_RESEND_INTERVAL_SECONDS } from "./config";
+import { JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PRO_PLAN_PRICE_INR, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, EMAIL_FROM, OTP_EXPIRY_MINUTES, OTP_RESEND_INTERVAL_SECONDS } from "./config";
 import  UserMiddleware from "./middleware";
 import { generateHash } from "./utils";
 import cors from "cors";
 import fs from "fs"
 import Razorpay from "razorpay";
 import crypto from "crypto";
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
 import { OAuth2Client } from "google-auth-library";
 app.use(cors());
 
@@ -27,7 +27,34 @@ const razorpay = (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) ? new Razorpay({
     key_secret: RAZORPAY_KEY_SECRET
 }) : null;
 const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET || undefined) : null;
-const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+
+// Create Nodemailer transporter if SMTP is configured
+const emailTransporter = (SMTP_HOST && SMTP_USER && SMTP_PASS && EMAIL_FROM) ? nodemailer.createTransport({
+    host: SMTP_HOST,
+    port: SMTP_PORT,
+    secure: SMTP_PORT === 465, // true for 465 (SSL), false for 587 (TLS)
+    auth: {
+        user: SMTP_USER,
+        pass: SMTP_PASS
+    },
+    tls: {
+        // Do not fail on invalid certificates
+        rejectUnauthorized: false
+    }
+}) : null;
+
+// Log email configuration status (without exposing password)
+if (!emailTransporter) {
+    const missing: string[] = [];
+    if (!SMTP_HOST) missing.push("SMTP_HOST");
+    if (!SMTP_USER) missing.push("SMTP_USER");
+    if (!SMTP_PASS) missing.push("SMTP_PASS or SMTP_PASSWORD");
+    if (!EMAIL_FROM) missing.push("EMAIL_FROM");
+    console.log(`[Email] Email service not configured. Missing: ${missing.join(", ") || "unknown"}`);
+} else {
+    console.log(`[Email] SMTP configured: ${SMTP_HOST}:${SMTP_PORT} (secure: ${SMTP_PORT === 465})`);
+}
+
 const otpExpiryMs = OTP_EXPIRY_MINUTES * 60 * 1000;
 const otpResendIntervalMs = OTP_RESEND_INTERVAL_SECONDS * 1000;
 
@@ -122,8 +149,8 @@ function hashOtp(code: string) {
 }
 
 async function sendOtpEmail(email: string, code: string) {
-    if (!resend || !EMAIL_FROM) {
-        throw new Error("Email service is not configured. Please set RESEND_API_KEY in your environment variables.");
+    if (!emailTransporter || !EMAIL_FROM) {
+        throw new Error("Email service is not configured. Please set SMTP_HOST, SMTP_USER, SMTP_PASS, and EMAIL_FROM in your environment variables.");
     }
     const html = `
         <div style="font-family: Arial, sans-serif; line-height: 1.5; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -136,26 +163,29 @@ async function sendOtpEmail(email: string, code: string) {
         </div>
     `;
     try {
-        const result = await resend.emails.send({
+        const info = await emailTransporter.sendMail({
             from: EMAIL_FROM,
             to: email,
             subject: "Your BrainCache login code",
             html
         });
-        if (result.error) {
-            throw new Error(result.error.message || "Failed to send email");
-        }
-        console.log(`[Resend] Email sent successfully. ID: ${result.data?.id}`);
+        console.log(`[Email] Email sent successfully. Message ID: ${info.messageId}`);
     } catch (sendError: any) {
         const errorMsg = sendError?.message || "Failed to send email";
-        console.error("Resend email error:", errorMsg, sendError);
-        if (errorMsg.includes("API key") || errorMsg.includes("Unauthorized") || errorMsg.includes("401")) {
-            throw new Error("Invalid Resend API key. Please check your RESEND_API_KEY in environment variables.");
-        } else if (errorMsg.includes("domain") || errorMsg.includes("from")) {
-            throw new Error("Invalid sender email address. Please verify EMAIL_FROM is a verified domain in Resend.");
-        } else {
-            throw new Error(`Failed to send email: ${errorMsg}`);
+        console.error("Email sending error:", errorMsg, sendError);
+        
+        // Check for authentication issues
+        if (errorMsg.includes("Invalid login") || errorMsg.includes("authentication") || errorMsg.includes("535") || errorMsg.includes("535-5.7.8")) {
+            throw new Error("Email authentication failed. Please check your SMTP_USER and SMTP_PASS in environment variables.");
         }
+        
+        // Check for connection issues
+        if (errorMsg.includes("ECONNREFUSED") || errorMsg.includes("ETIMEDOUT") || errorMsg.includes("timeout") || errorMsg.includes("connection")) {
+            throw new Error("Unable to connect to email server. Please check SMTP_HOST and SMTP_PORT settings.");
+        }
+        
+        // Generic error fallback
+        throw new Error(`Failed to send email: ${errorMsg}`);
     }
 }
 
@@ -243,8 +273,8 @@ app.post("/api/v1/auth/google", async (req: Request, res: Response) => {
 });
 
 app.post("/api/v1/auth/request-otp", async (req: Request, res: Response) => {
-    if (!resend || !EMAIL_FROM) {
-        res.status(503).json({ message: "Email service is not configured. Please set RESEND_API_KEY in your environment variables." });
+    if (!emailTransporter || !EMAIL_FROM) {
+        res.status(503).json({ message: "Email service is not configured. Please set SMTP_HOST, SMTP_USER, SMTP_PASS, and EMAIL_FROM in your environment variables." });
         return;
     }
     const parsed = RequestOtpSchema.safeParse(req.body);
@@ -298,10 +328,10 @@ app.post("/api/v1/auth/request-otp", async (req: Request, res: Response) => {
         // Handle email-related errors
         if (errorMessage.includes("Email service is not configured")) {
             res.status(503).json({ message: "Email service is not configured. Please contact support." });
-        } else if (errorMessage.includes("authentication") || errorMessage.includes("credentials") || errorMessage.includes("535")) {
-            res.status(500).json({ message: "Email authentication failed. Please check SMTP credentials in server configuration." });
-        } else if (errorMessage.includes("connection") || errorMessage.includes("timeout") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ETIMEDOUT")) {
-            res.status(500).json({ message: "Unable to connect to email server. Please check SMTP host and port settings." });
+        } else if (errorMessage.includes("Email authentication failed") || errorMessage.includes("Invalid login") || errorMessage.includes("535")) {
+            res.status(500).json({ message: "Email authentication failed. Please check SMTP_USER and SMTP_PASS in server configuration." });
+        } else if (errorMessage.includes("Unable to connect to email server") || errorMessage.includes("connection") || errorMessage.includes("timeout") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ETIMEDOUT")) {
+            res.status(500).json({ message: "Unable to connect to email server. Please check SMTP_HOST and SMTP_PORT settings." });
         } else {
             res.status(500).json({ message: `Unable to send OTP: ${errorMessage}` });
         }
