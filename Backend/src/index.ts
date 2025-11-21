@@ -6,13 +6,15 @@ import { Types } from "mongoose";
 const app = express();
 app.use(express.json());
 import jwt from "jsonwebtoken"
-import { JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PRO_PLAN_PRICE_INR } from "./config";
+import { JWT_SECRET, RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, PRO_PLAN_PRICE_INR, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, RESEND_API_KEY, EMAIL_FROM, OTP_EXPIRY_MINUTES, OTP_RESEND_INTERVAL_SECONDS } from "./config";
 import  UserMiddleware from "./middleware";
 import { generateHash } from "./utils";
 import cors from "cors";
 import fs from "fs"
 import Razorpay from "razorpay";
 import crypto from "crypto";
+import { Resend } from "resend";
+import { OAuth2Client } from "google-auth-library";
 app.use(cors());
 
 const DEFAULT_SPACE_NAME = "My Brain";
@@ -24,6 +26,10 @@ const razorpay = (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) ? new Razorpay({
     key_id: RAZORPAY_KEY_ID,
     key_secret: RAZORPAY_KEY_SECRET
 }) : null;
+const googleClient = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET || undefined) : null;
+const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null;
+const otpExpiryMs = OTP_EXPIRY_MINUTES * 60 * 1000;
+const otpResendIntervalMs = OTP_RESEND_INTERVAL_SECONDS * 1000;
 
 const objectIdSchema = z.string().regex(/^[0-9a-fA-F]{24}$/, "Invalid identifier");
 
@@ -99,97 +105,265 @@ async function toggleSpaceShare(userId: Types.ObjectId, spaceId: Types.ObjectId,
     return { message: "Sharing stopped successfully." };
 }
 
-const SignupSchema = z.object({
-    username: z.string().min(3).max(20),
-    password: z.string().min(8).max(20).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/).regex(/[!@#$%^&*(),.?":{}|<>]/),
-    firstName: z.string().min(1).max(50),
-    lastName: z.string().min(1).max(50),
-    address: z.string().min(1).max(200)
-})
+function createAuthToken(userId: Types.ObjectId) {
+    return jwt.sign({
+        userId: userId.toString()
+    }, JWT_SECRET, {
+        expiresIn: "30d"
+    });
+}
 
-const SigninSchema = z.object({
-    username: z.string().min(3).max(20),
-    password: z.string().min(8).max(20).regex(/[A-Z]/).regex(/[a-z]/).regex(/[0-9]/).regex(/[!@#$%^&*(),.?":{}|<>]/)
-})
+function generateOtpCode() {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+}
 
-app.post("/api/v1/signup", async (req:Request,res:Response)=>{
-    try{
-        const parsedData = SignupSchema.safeParse(req.body);
+function hashOtp(code: string) {
+    return crypto.createHash("sha256").update(code).digest("hex");
+}
 
-        if(parsedData.error){
-            res.status(403).json({
-                message: "Invalid credentials!"
-            })
+async function sendOtpEmail(email: string, code: string) {
+    if (!resend || !EMAIL_FROM) {
+        throw new Error("Email service is not configured. Please set RESEND_API_KEY in your environment variables.");
+    }
+    const html = `
+        <div style="font-family: Arial, sans-serif; line-height: 1.5; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #4f46e5; margin-bottom: 20px;">BrainCache Login Code</h2>
+            <p style="font-size: 16px; color: #374151; margin-bottom: 20px;">Use the following one-time code to sign in:</p>
+            <div style="background-color: #f3f4f6; border-radius: 8px; padding: 20px; text-align: center; margin: 30px 0;">
+                <p style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #1f2937; margin: 0;">${code}</p>
+            </div>
+            <p style="font-size: 14px; color: #6b7280; margin-top: 20px;">This code will expire in ${OTP_EXPIRY_MINUTES} minutes. If you did not request this code, you can safely ignore this email.</p>
+        </div>
+    `;
+    try {
+        const result = await resend.emails.send({
+            from: EMAIL_FROM,
+            to: email,
+            subject: "Your BrainCache login code",
+            html
+        });
+        if (result.error) {
+            throw new Error(result.error.message || "Failed to send email");
+        }
+        console.log(`[Resend] Email sent successfully. ID: ${result.data?.id}`);
+    } catch (sendError: any) {
+        const errorMsg = sendError?.message || "Failed to send email";
+        console.error("Resend email error:", errorMsg, sendError);
+        if (errorMsg.includes("API key") || errorMsg.includes("Unauthorized") || errorMsg.includes("401")) {
+            throw new Error("Invalid Resend API key. Please check your RESEND_API_KEY in environment variables.");
+        } else if (errorMsg.includes("domain") || errorMsg.includes("from")) {
+            throw new Error("Invalid sender email address. Please verify EMAIL_FROM is a verified domain in Resend.");
+        } else {
+            throw new Error(`Failed to send email: ${errorMsg}`);
+        }
+    }
+}
+
+const EmailSchema = z.string().email("Invalid email address");
+const RequestOtpSchema = z.object({
+    email: EmailSchema
+});
+const VerifyOtpSchema = z.object({
+    email: EmailSchema,
+    otp: z.string().regex(/^[0-9]{6}$/, "OTP must be 6 digits"),
+    firstName: z.string().min(1).max(50).optional(),
+    lastName: z.string().min(1).max(50).optional()
+});
+const GoogleAuthSchema = z.object({
+    idToken: z.string().min(20),
+    firstName: z.string().min(1).max(50).optional(),
+    lastName: z.string().min(1).max(50).optional()
+});
+
+app.get("/api/v1/auth/config", (req: Request, res: Response) => {
+    res.status(200).json({
+        googleClientId: GOOGLE_CLIENT_ID || null,
+        googleAuthEnabled: !!GOOGLE_CLIENT_ID
+    });
+});
+
+app.post("/api/v1/auth/google", async (req: Request, res: Response) => {
+    if (!googleClient || !GOOGLE_CLIENT_ID) {
+        res.status(503).json({ message: "Google authentication is not configured on this server." });
+        return;
+    }
+    const parsed = GoogleAuthSchema.safeParse(req.body);
+    if (parsed.error) {
+        res.status(400).json({ message: "Invalid Google authentication payload." });
+        return;
+    }
+    try {
+        const ticket = await googleClient.verifyIdToken({
+            idToken: parsed.data.idToken,
+            audience: GOOGLE_CLIENT_ID
+        });
+        const payload = ticket.getPayload();
+        const email = payload?.email?.toLowerCase();
+        if (!email) {
+            res.status(400).json({ message: "Unable to verify Google account email." });
             return;
         }
-
-        const {username, password, firstName, lastName, address} = parsedData.data;
-
-        const user = await UserModel.findOne({username});
-
-        if(user){
-            res.status(403).json({
-                message: "User already exists."
-            })
-        }
-        else{
-            const createdUser = await UserModel.create({
-                username,
-                password,
-                firstName,
-                lastName,
-                address
+        const googleId = payload?.sub;
+        const givenName = payload?.given_name || parsed.data.firstName;
+        const familyName = payload?.family_name || parsed.data.lastName;
+        let user = await UserModel.findOne({ email });
+        if (!user) {
+            user = await UserModel.create({
+                email,
+                googleId,
+                firstName: givenName,
+                lastName: familyName
             });
+        } else {
+            if (!user.googleId && googleId) {
+                user.googleId = googleId;
+            }
+            if (!user.firstName && givenName) {
+                user.firstName = givenName;
+            }
+            if (!user.lastName && familyName) {
+                user.lastName = familyName;
+            }
+            await user.save();
+        }
+        await ensureDefaultSpace(user._id);
+        const token = createAuthToken(user._id);
+        res.status(200).json({
+            token,
+            user: {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }
+        });
+    } catch (error) {
+        console.error("Google auth error", error);
+        res.status(401).json({ message: "Google authentication failed." });
+    }
+});
 
-            await SpaceModel.create({
-                name: DEFAULT_SPACE_NAME,
-                description: "Default space",
-                userId: createdUser._id
-            });
-
-            res.status(200).json({
-                message: "Succesfully signed up."
-            })
+app.post("/api/v1/auth/request-otp", async (req: Request, res: Response) => {
+    if (!resend || !EMAIL_FROM) {
+        res.status(503).json({ message: "Email service is not configured. Please set RESEND_API_KEY in your environment variables." });
+        return;
+    }
+    const parsed = RequestOtpSchema.safeParse(req.body);
+    if (parsed.error) {
+        res.status(400).json({ message: "Invalid email address." });
+        return;
+    }
+    try {
+        const email = parsed.data.email.trim().toLowerCase();
+        let user = await UserModel.findOne({ email });
+        if (!user) {
+            try {
+                user = await UserModel.create({ email });
+            } catch (createError: any) {
+                // Handle race condition - user might have been created between findOne and create
+                if (createError.code === 11000 || createError.codeName === 'DuplicateKey') {
+                    user = await UserModel.findOne({ email });
+                    if (!user) {
+                        throw new Error("Failed to create user. Please try again.");
+                    }
+                } else {
+                    throw createError;
+                }
+            }
+        } else if (user.otpLastSentAt && Date.now() - user.otpLastSentAt.getTime() < otpResendIntervalMs) {
+            const waitSecs = Math.ceil((otpResendIntervalMs - (Date.now() - user.otpLastSentAt.getTime())) / 1000);
+            res.status(429).json({ message: `Please wait ${waitSecs} seconds before requesting another code.` });
+            return;
+        }
+        const otp = generateOtpCode();
+        console.log(`[OTP] Generating OTP for ${email.substring(0, 3)}***`);
+        user.otpHash = hashOtp(otp);
+        user.otpExpiresAt = new Date(Date.now() + otpExpiryMs);
+        user.otpLastSentAt = new Date();
+        await user.save();
+        console.log(`[OTP] User saved, sending email...`);
+        await sendOtpEmail(email, otp);
+        console.log(`[OTP] Email sent successfully to ${email.substring(0, 3)}***`);
+        res.status(200).json({ message: "OTP sent to your email address." });
+    } catch (error: any) {
+        console.error("OTP request error", error);
+        const errorMessage = error?.message || "Unknown error";
+        const errorCode = error?.code || error?.codeName;
+        
+        // Handle MongoDB errors
+        if (errorCode === 11000 || errorCode === 'DuplicateKey') {
+            res.status(500).json({ message: "Database error. Please try again or contact support." });
+            return;
+        }
+        
+        // Handle email-related errors
+        if (errorMessage.includes("Email service is not configured")) {
+            res.status(503).json({ message: "Email service is not configured. Please contact support." });
+        } else if (errorMessage.includes("authentication") || errorMessage.includes("credentials") || errorMessage.includes("535")) {
+            res.status(500).json({ message: "Email authentication failed. Please check SMTP credentials in server configuration." });
+        } else if (errorMessage.includes("connection") || errorMessage.includes("timeout") || errorMessage.includes("ECONNREFUSED") || errorMessage.includes("ETIMEDOUT")) {
+            res.status(500).json({ message: "Unable to connect to email server. Please check SMTP host and port settings." });
+        } else {
+            res.status(500).json({ message: `Unable to send OTP: ${errorMessage}` });
         }
     }
-    catch(e){
-        res.status(411).json({
-            message: "Invalid credentials!"
-        })
+});
+
+app.post("/api/v1/auth/verify-otp", async (req: Request, res: Response) => {
+    const parsed = VerifyOtpSchema.safeParse(req.body);
+    if (parsed.error) {
+        res.status(400).json({ message: "Invalid OTP payload." });
+        return;
     }
-})
-
-
-app.post("/api/v1/signin", async (req:Request,res:Response)=>{
-    try{
-        const parsedData = SigninSchema.parse(req.body);
-        const {username, password} = parsedData;
-
-        const user = await UserModel.findOne({username, password});
-
-        if(user){
-            const token = jwt.sign({
-                username,
-                password
-            },JWT_SECRET);
-
-            res.status(200).json({
-                token: token,
-                message: "Succesfully signed in."
-            })
+    try {
+        const email = parsed.data.email.trim().toLowerCase();
+        const otpInput = parsed.data.otp.trim();
+        console.log(`[OTP Verify] Attempting verification for ${email.substring(0, 3)}***`);
+        const user = await UserModel.findOne({ email });
+        if (!user || !user.otpHash || !user.otpExpiresAt) {
+            console.log(`[OTP Verify] No OTP found for user`);
+            res.status(400).json({ message: "Please request a new OTP." });
+            return;
         }
-        else{
-            res.status(403).json({
-                message: "User does not exist!"
-            })
+        if (user.otpExpiresAt.getTime() < Date.now()) {
+            console.log(`[OTP Verify] OTP expired`);
+            user.otpHash = undefined;
+            user.otpExpiresAt = undefined;
+            await user.save();
+            res.status(400).json({ message: "OTP expired. Please request a new one." });
+            return;
         }
+        const incomingHash = hashOtp(otpInput);
+        if (incomingHash !== user.otpHash) {
+            console.log(`[OTP Verify] Invalid OTP - hash mismatch`);
+            res.status(400).json({ message: "Invalid OTP. Please try again." });
+            return;
+        }
+        console.log(`[OTP Verify] OTP verified successfully`);
+        user.otpHash = undefined;
+        user.otpExpiresAt = undefined;
+        user.otpLastSentAt = undefined;
+        if (parsed.data.firstName) {
+            user.firstName = parsed.data.firstName;
+        }
+        if (parsed.data.lastName) {
+            user.lastName = parsed.data.lastName;
+        }
+        await user.save();
+        await ensureDefaultSpace(user._id);
+        const token = createAuthToken(user._id);
+        res.status(200).json({
+            token,
+            user: {
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName
+            }
+        });
+    } catch (error) {
+        console.error("OTP verify error", error);
+        res.status(500).json({ message: "Unable to verify OTP right now." });
     }
-    catch(e){
-        res.status(411).json({
-            message: "Invalid credentials!"
-        })
-    }
-})
+});
 
 // Get current user profile
 app.get("/api/v1/profile", UserMiddleware, async (req: Request, res: Response) => {
@@ -199,7 +373,7 @@ app.get("/api/v1/profile", UserMiddleware, async (req: Request, res: Response) =
         return;
     }
     res.status(200).json({
-        username: user.username,
+        email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         address: user.address
@@ -235,7 +409,7 @@ app.patch("/api/v1/profile", UserMiddleware, async (req: Request, res: Response)
             return;
         }
         res.status(200).json({
-            username: updated.username,
+            email: updated.email,
             firstName: updated.firstName,
             lastName: updated.lastName,
             address: updated.address
@@ -450,7 +624,7 @@ app.get("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
 
     const content = await ContentModel.find({userId: user._id, spaceId: space._id}).populate({
         path: "userId",
-        select: "username"
+        select: "email firstName lastName"
     });
 
     res.status(200).json({
@@ -564,7 +738,7 @@ app.post("/api/v1/subscription/checkout", UserMiddleware, async (req: Request, r
         const receipt = `sub_${user._id.toString().slice(-8)}_${Date.now().toString().slice(-6)}`;
         const notes = {
             userId: user._id.toString(),
-            username: user.username || "",
+            email: user.email || "",
             plan: "pro"
         };
         const order = await razorpay.orders.create({
@@ -573,8 +747,8 @@ app.post("/api/v1/subscription/checkout", UserMiddleware, async (req: Request, r
             receipt,
             notes
         });
-        const customerName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username || "BrainCache User";
-        const customerEmail = user.username?.includes("@") ? user.username : undefined;
+        const customerName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.email || "BrainCache User";
+        const customerEmail = user.email;
         const customerContact = undefined;
         res.status(200).json({
             orderId: order.id,
@@ -747,7 +921,10 @@ app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
 
         // If it's a content-specific share, return just that content
         if (link.contentId) {
-            const content = await ContentModel.findById(link.contentId);
+            const content = await ContentModel.findById(link.contentId).populate({
+                path: "userId",
+                select: "email firstName lastName"
+            });
             if (!content) {
                  res.status(404).json({ message: "Content not found" });
                  return;
@@ -760,7 +937,10 @@ app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
         }
 
         // Otherwise, return all user's content (for backward compatibility)
-        const contents = await ContentModel.find({ userId: link.userId });
+        const contents = await ContentModel.find({ userId: link.userId }).populate({
+            path: "userId",
+            select: "email firstName lastName"
+        });
         res.status(200).json({
             contents,
             isSingleItem: false
@@ -785,7 +965,10 @@ app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Re
     }
 
     const userId = link.userId;
-    const contents = await ContentModel.find({ userId });
+    const contents = await ContentModel.find({ userId }).populate({
+        path: "userId",
+        select: "email firstName lastName"
+    });
 
     res.status(200).json({
         contents,

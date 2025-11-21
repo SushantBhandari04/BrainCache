@@ -1,15 +1,40 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import mongoose, { model } from "mongoose"
 const Schema = mongoose.Schema;
 const ObjectId = mongoose.Types.ObjectId;
-mongoose.connect("mongodb+srv://sushbh2004:Sushant%402004@cluster0.byi6a.mongodb.net/BrainCache");
+mongoose.connect(process.env.MONGO_URI || "");
 
 const UserSchema = new Schema({
-    username: {type:String, required:true, unique:true},
-    password: {type:String, required:true},
-    firstName: {type:String, required:true},
-    lastName: {type:String, required:true},
-    address: {type:String, required:true},
+    email: {type:String, required:true, unique:true},
+    firstName: {type:String},
+    lastName: {type:String},
+    address: {type:String},
+    googleId: {type:String},
+    otpHash: {type:String},
+    otpExpiresAt: {type:Date},
+    otpLastSentAt: {type:Date},
     subscriptionPlan: {type:String, enum: ["free","pro"], default: "free"}
+}, {
+    timestamps: true
+});
+
+// Drop old username index if it exists (migration from old schema)
+mongoose.connection.once('open', async () => {
+    try {
+        const collection = mongoose.connection.collection('users');
+        const indexes = await collection.indexes();
+        const usernameIndex = indexes.find((idx: any) => idx.name === 'username_1' || (idx.key && idx.key.username));
+        if (usernameIndex) {
+            await collection.dropIndex('username_1');
+            console.log('✓ Dropped old username index');
+        }
+    } catch (err: any) {
+        if (err.code !== 27 && err.codeName !== 'IndexNotFound') {
+            console.error('Error dropping username index:', err.message);
+        }
+    }
 });
 
 const contentTypes = ['link','document',"youtube", "twitter"];

@@ -14,11 +14,9 @@ const UserMiddleware = async (req: Request, res: Response, next: NextFunction) =
       return;
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET) as {username:string, password:string};  // Cast to 'User'
+    const decoded = jwt.verify(token, JWT_SECRET) as {userId: string};
 
-    const {username, password} = decoded;
-
-    const foundUser = await UserModel.findOne({username, password});
+    const foundUser = await UserModel.findById(decoded.userId);
 
     if(!foundUser){
         res.status(401).json({
