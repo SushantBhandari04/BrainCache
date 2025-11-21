@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { CrossIcon } from "./icons";
+import { ShareWithUsersModal } from "./ShareWithUsersModal";
 
 const WhatsappBadge = () => (
     <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10 text-green-600">
@@ -57,6 +58,8 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState<"link" | "users">("link");
+    const [userShareModalOpen, setUserShareModalOpen] = useState(false);
     const shareLink = useMemo(() => currentHash ? `${window.location.origin}/share/${currentHash}` : "", [currentHash]);
     const shareTitle = useMemo(() => spaceName ? `Check out my "${spaceName}" BrainCache space` : "Check out my BrainCache space", [spaceName]);
     const canUseNativeShare = typeof window !== "undefined" && typeof (navigator as Navigator & { share?: Navigator["share"] | undefined }).share === "function";
@@ -182,69 +185,114 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
                                     )}
                                 </div>
                             </div>
+
+                            {/* Tabs */}
+                            <div className="mb-6 flex gap-2 border-b border-gray-200">
+                                <button
+                                    onClick={() => setActiveTab("link")}
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                        activeTab === "link"
+                                            ? "border-indigo-600 text-indigo-600"
+                                            : "border-transparent text-gray-500 hover:text-gray-700"
+                                    }`}
+                                >
+                                    Public Link
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab("users")}
+                                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                        activeTab === "users"
+                                            ? "border-indigo-600 text-indigo-600"
+                                            : "border-transparent text-gray-500 hover:text-gray-700"
+                                    }`}
+                                >
+                                    Share with Users
+                                </button>
+                            </div>
+
                             {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">{error}</div>}
 
-                            {loading ? (
-                                <div className="text-gray-500 text-sm">Loading share status...</div>
-                            ) : isShared ? (
-                                <>
-                                    <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-                                        <div className="flex items-center gap-3">
-                                            <LinkBadge />
-                                            <div className="flex-1">
-                                                <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Link</p>
-                                                <p className="text-sm text-gray-700 break-all font-medium">{shareLink}</p>
-                                            </div>
-                                            <button onClick={copyLink} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
-                                                Copy
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                                        <button onClick={shareViaWhatsApp} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-green-300 hover:bg-green-50 transition-all">
-                                            <WhatsappBadge />
-                                            <span className="text-sm font-semibold text-gray-800">WhatsApp</span>
-                                            <span className="text-xs text-gray-500">Share chat invite</span>
-                                        </button>
-                                        <button onClick={shareViaTelegram} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-sky-300 hover:bg-sky-50 transition-all">
-                                            <TelegramBadge />
-                                            <span className="text-sm font-semibold text-gray-800">Telegram</span>
-                                            <span className="text-xs text-gray-500">Send to channels</span>
-                                        </button>
-                                        <button onClick={shareViaEmail} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
-                                            <MailBadge />
-                                            <span className="text-sm font-semibold text-gray-800">Email</span>
-                                            <span className="text-xs text-gray-500">Send via mail</span>
-                                        </button>
-                                        <button onClick={nativeShare} disabled={!canUseNativeShare} className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 transition-all ${canUseNativeShare ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
-                                            <SystemBadge />
-                                            <span className="text-sm font-semibold text-gray-800">More</span>
-                                            <span className="text-xs text-gray-500">Device share sheet</span>
-                                        </button>
-                                    </div>
-                                    <div className="flex items-center justify-between bg-gray-900 text-white rounded-2xl px-6 py-4">
-                                        <div>
-                                            <p className="text-sm text-gray-300">Need to take it offline?</p>
-                                            <p className="text-lg font-semibold">Stop sharing this space</p>
-                                        </div>
-                                        <button onClick={() => updateSharing(false)} disabled={updating} className="bg-white text-gray-900 font-semibold rounded-full px-4 py-2 shadow-sm hover:bg-gray-100 transition">
-                                            Disable sharing
-                                        </button>
-                                    </div>
-                                </>
-                            ) : (
-                                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                                    <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-900/10 text-gray-900 flex items-center justify-center">
-                                        <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
-                                            <path d="M19 2H9c-1.103 0-2 .897-2 2v2H5c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h10c1.103 0 2-.897 2-2v-2h2c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2Zm-4 18H5V8h10v12Zm4-4h-2V8c0-1.103-.897-2-2-2h-8V4h12v12Z" />
+                            {activeTab === "users" ? (
+                                <div className="text-center py-8">
+                                    <div className="w-16 h-16 mx-auto mb-4 bg-indigo-100 rounded-full flex items-center justify-center">
+                                        <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                         </svg>
                                     </div>
-                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Space is private</h3>
-                                    <p className="text-gray-600 text-sm mb-5">Enable sharing to generate a private link that you can send to collaborators.</p>
-                                    <button onClick={() => updateSharing(true)} disabled={updating} className="inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-2 font-semibold shadow-sm hover:bg-blue-700 transition">
-                                        {updating ? "Enabling..." : "Enable sharing"}
+                                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Share with Application Users</h3>
+                                    <p className="text-gray-600 text-sm mb-6">Share this space directly with other BrainCache users. They'll see it in their dashboard.</p>
+                                    <button
+                                        onClick={() => setUserShareModalOpen(true)}
+                                        className="inline-flex items-center justify-center rounded-full bg-indigo-600 text-white px-6 py-2 font-semibold shadow-sm hover:bg-indigo-700 transition"
+                                    >
+                                        Manage Users
                                     </button>
                                 </div>
+                            ) : (
+                                <>
+                                    {loading ? (
+                                        <div className="text-gray-500 text-sm">Loading share status...</div>
+                                    ) : isShared ? (
+                                        <>
+                                            <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                                                <div className="flex items-center gap-3">
+                                                    <LinkBadge />
+                                                    <div className="flex-1">
+                                                        <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Link</p>
+                                                        <p className="text-sm text-gray-700 break-all font-medium">{shareLink}</p>
+                                                    </div>
+                                                    <button onClick={copyLink} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
+                                                        Copy
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                                                <button onClick={shareViaWhatsApp} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-green-300 hover:bg-green-50 transition-all">
+                                                    <WhatsappBadge />
+                                                    <span className="text-sm font-semibold text-gray-800">WhatsApp</span>
+                                                    <span className="text-xs text-gray-500">Share chat invite</span>
+                                                </button>
+                                                <button onClick={shareViaTelegram} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-sky-300 hover:bg-sky-50 transition-all">
+                                                    <TelegramBadge />
+                                                    <span className="text-sm font-semibold text-gray-800">Telegram</span>
+                                                    <span className="text-xs text-gray-500">Send to channels</span>
+                                                </button>
+                                                <button onClick={shareViaEmail} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                                                    <MailBadge />
+                                                    <span className="text-sm font-semibold text-gray-800">Email</span>
+                                                    <span className="text-xs text-gray-500">Send via mail</span>
+                                                </button>
+                                                <button onClick={nativeShare} disabled={!canUseNativeShare} className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 transition-all ${canUseNativeShare ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
+                                                    <SystemBadge />
+                                                    <span className="text-sm font-semibold text-gray-800">More</span>
+                                                    <span className="text-xs text-gray-500">Device share sheet</span>
+                                                </button>
+                                            </div>
+                                            <div className="flex items-center justify-between bg-gray-900 text-white rounded-2xl px-6 py-4">
+                                                <div>
+                                                    <p className="text-sm text-gray-300">Need to take it offline?</p>
+                                                    <p className="text-lg font-semibold">Stop sharing this space</p>
+                                                </div>
+                                                <button onClick={() => updateSharing(false)} disabled={updating} className="bg-white text-gray-900 font-semibold rounded-full px-4 py-2 shadow-sm hover:bg-gray-100 transition">
+                                                    Disable sharing
+                                                </button>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-6 text-center">
+                                            <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-900/10 text-gray-900 flex items-center justify-center">
+                                                <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+                                                    <path d="M19 2H9c-1.103 0-2 .897-2 2v2H5c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h10c1.103 0 2-.897 2-2v-2h2c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2Zm-4 18H5V8h10v12Zm4-4h-2V8c0-1.103-.897-2-2-2h-8V4h12v12Z" />
+                                                </svg>
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-gray-900 mb-2">Space is private</h3>
+                                            <p className="text-gray-600 text-sm mb-5">Enable sharing to generate a private link that you can send to collaborators.</p>
+                                            <button onClick={() => updateSharing(true)} disabled={updating} className="inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-2 font-semibold shadow-sm hover:bg-blue-700 transition">
+                                                {updating ? "Enabling..." : "Enable sharing"}
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             )}
                         </>
                     ) : (
@@ -254,6 +302,14 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
                     )}
                 </div>
             </div>
+
+            <ShareWithUsersModal
+                open={userShareModalOpen}
+                onClose={() => setUserShareModalOpen(false)}
+                resourceType="space"
+                resourceId={spaceId}
+                resourceName={spaceName}
+            />
         </div>
     );
 }

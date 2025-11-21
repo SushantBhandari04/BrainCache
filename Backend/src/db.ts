@@ -71,8 +71,22 @@ const LinkSchema = new Schema({
     timestamps: true
 })
 
+const ShareAccessSchema = new Schema({
+    resourceType: {type: String, enum: ['space', 'content'], required: true},
+    resourceId: {type: ObjectId, required: true},
+    ownerId: {type: ObjectId, ref: 'Users', required: true},
+    sharedWithId: {type: ObjectId, ref: 'Users', required: true},
+    permissions: {type: String, enum: ['read', 'read-write'], default: 'read'}
+}, {
+    timestamps: true
+})
+
+// Compound index to prevent duplicate shares
+ShareAccessSchema.index({ resourceType: 1, resourceId: 1, sharedWithId: 1 }, { unique: true });
+
 export const UserModel = model("Users",UserSchema);
 export const ContentModel = model("Contents",ContentSchema);
 export const TagsModel = model("Tags",TagsSchema);
 export const SpaceModel = model("Spaces",SpaceSchema);
 export const LinkModel = model("Links",LinkSchema);
+export const ShareAccessModel = model("ShareAccess", ShareAccessSchema);

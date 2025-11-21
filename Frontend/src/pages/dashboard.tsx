@@ -23,6 +23,13 @@ type Space = {
   name: string;
   description?: string;
   shareHash: string | null;
+  sharedBy?: {
+    _id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  isShared?: boolean;
 };
 
 function Dashboard() {
@@ -49,19 +56,29 @@ function Dashboard() {
   const [paymentsConfigured, setPaymentsConfigured] = useState(false);
   const [razorpayReady, setRazorpayReady] = useState(false);
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
+  const [sharedSpaces, setSharedSpaces] = useState<Space[]>([]);
+  const [spaceTab, setSpaceTab] = useState<"my" | "shared">("my");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpaceQueryRef = useRef<string | null>(searchParams.get("spaceId"));
   const shareIntentRef = useRef<boolean>(searchParams.get("share") === "1");
 
-  const selectedSpace = useMemo(() => spaces.find((space) => space._id === selectedSpaceId) || null, [spaces, selectedSpaceId]);
+  const selectedSpace = useMemo(() => {
+    const allSpaces = [...spaces, ...sharedSpaces];
+    return allSpaces.find((space) => space._id === selectedSpaceId) || null;
+  }, [spaces, sharedSpaces, selectedSpaceId]);
+  
+  const isSharedSpace = useMemo(() => {
+    return selectedSpace?.isShared || false;
+  }, [selectedSpace]);
 
   async function getContent(spaceId?: string | null) {
     if (!spaceId) return;
     try {
+      const token = localStorage.getItem("token") || "";
       const response = await axios.get(`${BACKEND_URL}/api/v1/content`, {
         headers: {
-          Authorization: localStorage.getItem("token") || "",
+          Authorization: token,
         },
         params: {
           spaceId,
@@ -70,8 +87,16 @@ function Dashboard() {
       setContent(response.data.content);
     } catch (error) {
       console.error("Failed to load content", error);
+      // If it's a shared space, try fetching from shared endpoint
+      const sharedSpace = sharedSpaces.find(s => s._id === spaceId);
+      if (sharedSpace) {
+        // For shared spaces, content should be accessible via the same endpoint
+        // The backend should handle permissions
+        setContent([]);
+      }
     }
   }
+
 
   async function Delete(id: ObjectId) {
     await axios.delete(`${BACKEND_URL}/api/v1/content`, {
@@ -171,9 +196,9 @@ function Dashboard() {
         }
       );
       const newSpace = res.data.space as Space;
-      setSpaces((prev) => [...prev, newSpace]);
+      // Refresh spaces to get updated list including shared spaces
+      await fetchSpaces();
       setSelectedSpaceId(newSpace._id);
-      setSpaceCount((prev) => prev + 1);
       updateSpaceQueryParam(newSpace._id);
       setShowSpaceForm(false);
       setNewSpaceName("");
@@ -195,6 +220,11 @@ function Dashboard() {
     setSpaces((prev) =>
       prev.map((space) => (space._id === spaceId ? { ...space, shareHash: hash } : space))
     );
+  }
+
+  // Refresh spaces when needed (e.g., after creating a new space)
+  function refreshSpaces() {
+    fetchSpaces();
   }
 
   useEffect(() => {
@@ -397,7 +427,7 @@ function Dashboard() {
             title="Add Content"
             startIcon={<PlusIcon />}
             onClick={() => setOpen(true)}
-            disabled={!selectedSpaceId}
+            disabled={!selectedSpaceId || isSharedSpace}
           />
           <Button
             variant="secondary"
@@ -411,7 +441,7 @@ function Dashboard() {
             title="Share"
             startIcon={<ShareIcon size={4} color="blue-600" />}
             onClick={() => setShareOpen(true)}
-            disabled={!selectedSpaceId}
+            disabled={!selectedSpaceId || isSharedSpace}
           />
           <img
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -467,21 +497,47 @@ function Dashboard() {
           <div className="p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-bold text-gray-900">Spaces</h2>
+              {spaceTab === "my" && (
+                <button
+                  className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
+                      ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                      : "text-violet-600 hover:bg-violet-50 hover:text-violet-700"
+                    }`}
+                  onClick={() => {
+                    if (limitReached && !showSpaceForm) {
+                      setSpaceError("Upgrade to Pro to create more spaces.");
+                      return;
+                    }
+                    setShowSpaceForm((prev) => !prev);
+                  }}
+                  disabled={limitReached && !showSpaceForm}
+                >
+                  {showSpaceForm ? "✕ Close" : "+ New"}
+                </button>
+              )}
+            </div>
+
+            {/* Tabs */}
+            <div className="mb-4 flex gap-2 border-b border-gray-200">
               <button
-                className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
-                    ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                    : "text-violet-600 hover:bg-violet-50 hover:text-violet-700"
-                  }`}
-                onClick={() => {
-                  if (limitReached && !showSpaceForm) {
-                    setSpaceError("Upgrade to Pro to create more spaces.");
-                    return;
-                  }
-                  setShowSpaceForm((prev) => !prev);
-                }}
-                disabled={limitReached && !showSpaceForm}
+                onClick={() => setSpaceTab("my")}
+                className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  spaceTab === "my"
+                    ? "border-violet-600 text-violet-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
               >
-                {showSpaceForm ? "✕ Close" : "+ New"}
+                My Spaces ({spaces.length})
+              </button>
+              <button
+                onClick={() => setSpaceTab("shared")}
+                className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  spaceTab === "shared"
+                    ? "border-violet-600 text-violet-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                Shared ({sharedSpaces.length})
               </button>
             </div>
             {spaceError && (
@@ -540,34 +596,70 @@ function Dashboard() {
                     <span className="text-sm text-gray-500">Loading spaces...</span>
                   </div>
                 </div>
-              ) : spaces.length ? (
-                spaces.map((space) => (
-                  <button
-                    key={space._id}
-                    onClick={() => handleSpaceSelect(space._id)}
-                    className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
-                        ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
-                        : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
-                      }`}
-                  >
-                    <div className="flex-1 text-left min-w-0">
-                      <div className="font-semibold truncate mb-0.5">{space.name}</div>
-                      {space.description && (
-                        <div className="text-xs text-gray-500 truncate">{space.description}</div>
+              ) : spaceTab === "my" ? (
+                spaces.length > 0 ? (
+                  spaces.map((space) => (
+                    <button
+                      key={space._id}
+                      onClick={() => handleSpaceSelect(space._id)}
+                      className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
+                          ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
+                          : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
+                        }`}
+                    >
+                      <div className="flex-1 text-left min-w-0">
+                        <div className="font-semibold truncate mb-0.5">{space.name}</div>
+                        {space.description && (
+                          <div className="text-xs text-gray-500 truncate">{space.description}</div>
+                        )}
+                      </div>
+                      {space.shareHash && (
+                        <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold border border-green-200">
+                          Public
+                        </span>
                       )}
-                    </div>
-                    {space.shareHash && (
-                      <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold border border-green-200">
-                        Shared
-                      </span>
-                    )}
-                  </button>
-                ))
+                    </button>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <p>No spaces yet.</p>
+                    <p className="text-xs mt-1">Create one to get started</p>
+                  </div>
+                )
               ) : (
-                <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                  <p>No spaces yet.</p>
-                  <p className="text-xs mt-1">Create one to get started</p>
-                </div>
+                sharedSpaces.length > 0 ? (
+                  sharedSpaces.map((space) => {
+                    const ownerName = space.sharedBy 
+                      ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
+                      : "Unknown";
+                    return (
+                      <button
+                        key={space._id}
+                        onClick={() => handleSpaceSelect(space._id)}
+                        className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
+                            ? "border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-900 shadow-md"
+                            : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
+                          }`}
+                      >
+                        <div className="flex-1 text-left min-w-0">
+                          <div className="font-semibold truncate mb-0.5">{space.name}</div>
+                          {space.description && (
+                            <div className="text-xs text-gray-500 truncate">{space.description}</div>
+                          )}
+                          <div className="text-xs text-indigo-600 mt-1">by {ownerName}</div>
+                        </div>
+                        <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
+                          Shared
+                        </span>
+                      </button>
+                    );
+                  })
+                ) : (
+                  <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                    <p>No shared spaces.</p>
+                    <p className="text-xs mt-1">Spaces shared with you will appear here</p>
+                  </div>
+                )
               )}
             </div>
           </div>
@@ -587,8 +679,16 @@ function Dashboard() {
                 )}
               </h1>
               {selectedSpace && (
-                <div className="px-4 py-2 bg-violet-100 text-violet-700 rounded-lg border border-violet-200">
+                <div className={`px-4 py-2 rounded-lg border ${isSharedSpace 
+                  ? "bg-indigo-100 text-indigo-700 border-indigo-200" 
+                  : "bg-violet-100 text-violet-700 border-violet-200"
+                }`}>
                   <span className="text-sm font-semibold">{selectedSpace.name}</span>
+                  {isSharedSpace && selectedSpace.sharedBy && (
+                    <span className="text-xs ml-2 opacity-75">
+                      by {selectedSpace.sharedBy.firstName || selectedSpace.sharedBy.email}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -663,11 +763,12 @@ function Dashboard() {
                         className={`transform transition-all duration-300 hover:-translate-y-1 ${colSpanClasses} ${rowSpanClasses}`}
                       >
                         <Card
-                          onDelete={Delete}
+                          onDelete={isSharedSpace ? undefined : Delete}
                           title={item.title}
                           link={item.link}
                           type={item.type}
                           _id={item._id}
+                          readOnly={isSharedSpace}
                         />
                       </div>
                     );

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { Card } from "../components/Card";
 import { SearchIcon } from "../components/icons";
 import { Type } from "./dashboard";
+import { Logo } from "../components/Logo";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -95,10 +96,23 @@ export function SharedDashboard() {
 
     if (isLoading) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading shared content...</p>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+                <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <Logo />
+                    </div>
+                </div>
+                <div className="flex items-center justify-center min-h-[calc(100vh-100px)]">
+                    <div className="text-center">
+                        <div className="relative">
+                            <div className="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
+                            <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="h-8 w-8 bg-indigo-600 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                        <p className="mt-6 text-gray-600 font-medium">Loading shared content...</p>
+                        <p className="mt-2 text-sm text-gray-500">Please wait while we fetch the content</p>
+                    </div>
                 </div>
             </div>
         );
@@ -106,17 +120,36 @@ export function SharedDashboard() {
 
     if (expired) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center p-6 max-w-md mx-auto">
-                    <div className="text-5xl mb-4">🔗</div>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Link Expired</h1>
-                    <p className="text-gray-600 mb-6">The shared link has expired or is no longer available.</p>
-                    <a
-                        href="/"
-                        className="inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
-                    >
-                        Go to Home
-                    </a>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+                <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <Logo />
+                    </div>
+                </div>
+                <div className="flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
+                    <div className="text-center p-8 max-w-md mx-auto bg-white rounded-2xl shadow-lg border border-gray-200">
+                        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-red-100 to-orange-100 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Link Expired</h1>
+                        <p className="text-gray-600 mb-8">The shared link has expired or is no longer available.</p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <a
+                                href="/"
+                                className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+                            >
+                                Go to Home
+                            </a>
+                            <a
+                                href="/user/signin"
+                                className="inline-block bg-white text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Sign In
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -124,115 +157,263 @@ export function SharedDashboard() {
 
     if (authRequired) {
         return (
-            <div className="flex items-center justify-center h-screen">
-                <div className="text-center p-6 max-w-md mx-auto">
-                    <div className="text-5xl mb-4">🔒</div>
-                    <h1 className="text-2xl font-bold text-gray-800 mb-2">Authentication Required</h1>
-                    <p className="text-gray-600 mb-6">Please sign in to view this shared content.</p>
-                    <a
-                        href="/user/signin"
-                        className="inline-block bg-blue-500 text-white px-6 py-2 rounded-md hover:bg-blue-600 transition-colors"
-                    >
-                        Sign In
-                    </a>
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+                <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                        <Logo />
+                    </div>
+                </div>
+                <div className="flex items-center justify-center min-h-[calc(100vh-100px)] px-4">
+                    <div className="text-center p-8 max-w-md mx-auto bg-white rounded-2xl shadow-lg border border-gray-200">
+                        <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full flex items-center justify-center">
+                            <svg className="w-10 h-10 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">Authentication Required</h1>
+                        <p className="text-gray-600 mb-8">Please sign in to view this shared content.</p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <a
+                                href="/user/signin"
+                                className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors font-medium shadow-sm"
+                            >
+                                Sign In
+                            </a>
+                            <a
+                                href="/"
+                                className="inline-block bg-white text-gray-700 border-2 border-gray-300 px-6 py-3 rounded-lg hover:bg-gray-50 transition-colors font-medium"
+                            >
+                                Go to Home
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="mb-8">
-                    <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                        {isSingleItem ? 'Shared Content' : 'Shared Brain'}
-                        {ownerName && (
-                            <span className="text-lg font-normal text-gray-500 ml-2">
-                                by {ownerName}
-                            </span>
-                        )}
-                    </h1>
-                    <p className="text-gray-600">
-                        {isSingleItem 
-                            ? 'This link shares a single content item.' 
-                            : 'This is a shared collection of content.'}
-                    </p>
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+            {/* Header */}
+            <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                            <Logo />
+                            <div className="hidden sm:block h-8 w-px bg-gray-300"></div>
+                            <div>
+                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-0.5">
+                                    {isSingleItem ? 'Shared Content' : 'Shared Brain'}
+                                </h1>
+                                {ownerName && (
+                                    <p className="text-sm text-gray-500">
+                                        Shared by <span className="font-medium text-gray-700">{ownerName}</span>
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <a
+                                href="/"
+                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                            >
+                                Home
+                            </a>
+                            <a
+                                href="/user/signin"
+                                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                            >
+                                Sign In
+                            </a>
+                        </div>
+                    </div>
                 </div>
+            </div>
 
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+                {/* Search Bar */}
                 <div className="mb-6">
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <div className="relative max-w-2xl">
+                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                             <SearchIcon className="h-5 w-5 text-gray-400" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="Search content..."
+                            className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm transition-all"
+                            placeholder="Search content by title or link..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                            >
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="flex flex-col md:flex-row gap-6">
+                <div className="flex flex-col lg:flex-row gap-6">
                     {/* Sidebar with filters */}
-                    <div className="w-full md:w-48 flex-shrink-0">
-                        <div className="space-y-1">
-                            <button
-                                onClick={() => setActiveFilter("all")}
-                                className={`w-full text-left px-4 py-2 text-sm font-medium rounded-md ${
-                                    activeFilter === "all"
-                                        ? "bg-blue-100 text-blue-700"
-                                        : "text-gray-700 hover:bg-gray-100"
-                                }`}
-                            >
-                                All ({content.length})
-                            </button>
-                            {["youtube", "twitter", "document", "link"].map((type) => {
-                                const count = content.filter((item) => item.type === type).length;
-                                if (isSingleItem && count === 0) return null;
-                                
-                                return (
-                                    <button
-                                        key={type}
-                                        onClick={() => setActiveFilter(type as Type)}
-                                        className={`w-full text-left px-4 py-2 text-sm font-medium rounded-md ${
-                                            activeFilter === type
-                                                ? "bg-blue-100 text-blue-700"
-                                                : "text-gray-700 hover:bg-gray-100"
-                                        }`}
-                                    >
-                                        {type.charAt(0).toUpperCase() + type.slice(1)} ({count})
-                                    </button>
-                                );
-                            })}
+                    <div className="w-full lg:w-64 flex-shrink-0">
+                        <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 p-5 shadow-sm">
+                            <h2 className="text-lg font-bold text-gray-900 mb-4">Content Types</h2>
+                            <nav className="space-y-2">
+                                <button
+                                    onClick={() => setActiveFilter("all")}
+                                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                                        activeFilter === "all"
+                                            ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-l-4 border-indigo-500 shadow-sm"
+                                            : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent"
+                                    }`}
+                                >
+                                    <span>All Content</span>
+                                    <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                        activeFilter === "all"
+                                            ? 'bg-indigo-100 text-indigo-700'
+                                            : 'bg-gray-100 text-gray-600'
+                                    }`}>
+                                        {content.length}
+                                    </span>
+                                </button>
+                                {["youtube", "twitter", "document", "link"].map((type) => {
+                                    const count = content.filter((item) => item.type === type).length;
+                                    if (isSingleItem && count === 0) return null;
+                                    
+                                    return (
+                                        <button
+                                            key={type}
+                                            onClick={() => setActiveFilter(type as Type)}
+                                            className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                                                activeFilter === type
+                                                    ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-l-4 border-indigo-500 shadow-sm"
+                                                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent"
+                                            }`}
+                                        >
+                                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
+                                            <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                                activeFilter === type
+                                                    ? 'bg-indigo-100 text-indigo-700'
+                                                    : 'bg-gray-100 text-gray-600'
+                                            }`}>
+                                                {count}
+                                            </span>
+                                        </button>
+                                    );
+                                })}
+                            </nav>
                         </div>
                     </div>
 
                     {/* Main content */}
                     <div className="flex-1">
+                        <div className="mb-5 flex items-center justify-between">
+                            <div>
+                                <p className="text-sm text-gray-600 flex items-center gap-2">
+                                    <span className="font-semibold text-gray-900">{filteredContent.length}</span>
+                                    <span>{filteredContent.length === 1 ? 'item' : 'items'}</span>
+                                    {searchQuery && (
+                                        <span className="text-gray-400">matching "{searchQuery}"</span>
+                                    )}
+                                </p>
+                            </div>
+                            {content.length > 0 && (
+                                <div className="text-xs text-gray-500">
+                                    {isSingleItem ? 'Single item view' : `${content.length} total items`}
+                                </div>
+                            )}
+                        </div>
+
                         {filteredContent.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                                {filteredContent.map((item) => (
-                                    <Card
-                                        key={item._id}
-_id={item._id as any}
-                                        title={item.title}
-                                        link={item.link}
-                                        type={item.type}
-                                        readOnly={true}
-                                    />
-                                ))}
+                            <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 md:gap-5 auto-rows-[minmax(180px,auto)]">
+                                {filteredContent.map((item, index) => {
+                                    // Determine grid span classes based on content type
+                                    let colSpanClasses = "";
+                                    let rowSpanClasses = "row-span-1";
+
+                                    if (item.type === "youtube") {
+                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
+                                        rowSpanClasses = "row-span-2";
+                                    } else if (item.type === "twitter") {
+                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
+                                        rowSpanClasses = "row-span-1";
+                                    } else if (item.type === "document") {
+                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
+                                        rowSpanClasses = "row-span-2";
+                                    } else if (item.type === "link") {
+                                        colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-2";
+                                        rowSpanClasses = "row-span-1";
+                                    } else {
+                                        colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-1 2xl:col-span-2";
+                                        rowSpanClasses = "row-span-1";
+                                    }
+
+                                    return (
+                                        <div
+                                            key={item._id}
+                                            className={`transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${colSpanClasses} ${rowSpanClasses} animate-in fade-in slide-in-from-bottom-4`}
+                                            style={{ animationDelay: `${index * 50}ms` }}
+                                        >
+                                            <Card
+                                                _id={item._id as any}
+                                                title={item.title}
+                                                link={item.link}
+                                                type={item.type}
+                                                readOnly={true}
+                                            />
+                                        </div>
+                                    );
+                                })}
                             </div>
                         ) : (
-                            <div className="text-center py-12">
-                                <p className="text-gray-500">
+                            <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300 animate-in fade-in">
+                                <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+                                    {searchQuery ? (
+                                        <SearchIcon className="h-10 w-10 text-gray-400" />
+                                    ) : activeFilter !== "all" ? (
+                                        <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    )}
+                                </div>
+                                <h3 className="text-xl font-semibold text-gray-900 mb-2">
                                     {searchQuery
-                                        ? "No content matches your search."
+                                        ? 'No matches found'
                                         : activeFilter !== "all"
-                                        ? `No ${activeFilter} content found.`
-                                        : "No content available."}
+                                        ? `No ${activeFilter} content found`
+                                        : "No content available"}
+                                </h3>
+                                <p className="text-gray-600 mb-6 max-w-md px-4">
+                                    {searchQuery
+                                        ? `No content matches "${searchQuery}". Try a different search term or clear the filter.`
+                                        : activeFilter !== "all"
+                                        ? `There's no ${activeFilter} content in this shared collection. Try selecting "All Content" to see everything.`
+                                        : "This shared collection doesn't have any content yet."}
                                 </p>
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => setSearchQuery("")}
+                                        className="px-5 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm"
+                                    >
+                                        Clear search
+                                    </button>
+                                )}
+                                {!searchQuery && activeFilter !== "all" && (
+                                    <button
+                                        onClick={() => setActiveFilter("all")}
+                                        className="px-5 py-2.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors shadow-sm"
+                                    >
+                                        Show all content
+                                    </button>
+                                )}
                             </div>
                         )}
                     </div>

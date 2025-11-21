@@ -1,5 +1,5 @@
 import express, {Request, Response} from "express"
-import { ContentModel, LinkModel, SpaceModel, UserModel } from "./db";
+import { ContentModel, LinkModel, SpaceModel, UserModel, ShareAccessModel } from "./db";
 import {z} from "zod";
 import path from "path";
 import { Types } from "mongoose";
@@ -457,19 +457,54 @@ app.get("/api/v1/spaces", UserMiddleware, async (req: Request, res: Response) =>
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
+        const includeShared = req.query.includeShared === "true";
+        
         await ensureDefaultSpace(user._id);
         const spaces = await SpaceModel.find({ userId: user._id }).sort({ createdAt: 1 });
         const spaceIds = spaces.map(s => s._id);
         const links = spaceIds.length ? await LinkModel.find({ spaceId: { $in: spaceIds } }) : [];
         const linkMap = new Map(links.map(link => [link.spaceId?.toString() || "", link.hash]));
 
+        const ownedSpaces = spaces.map(space => ({
+            _id: space._id,
+            name: space.name,
+            description: space.description,
+            shareHash: linkMap.get(space._id.toString()) || null,
+            isShared: false
+        }));
+
+        let sharedSpaces: any[] = [];
+        if (includeShared) {
+            const shareAccesses = await ShareAccessModel.find({
+                resourceType: 'space',
+                sharedWithId: user._id
+            }).populate({
+                path: 'ownerId',
+                select: 'email firstName lastName'
+            }).sort({ createdAt: -1 });
+
+            const sharedSpaceIds = shareAccesses.map(sa => sa.resourceId);
+            const sharedSpacesData = sharedSpaceIds.length 
+                ? await SpaceModel.find({ _id: { $in: sharedSpaceIds } })
+                : [];
+
+            sharedSpaces = sharedSpacesData.map(space => {
+                const access = shareAccesses.find(sa => sa.resourceId.toString() === space._id.toString());
+                return {
+                    _id: space._id,
+                    name: space.name,
+                    description: space.description,
+                    shareHash: null,
+                    isShared: true,
+                    sharedBy: access?.ownerId || null,
+                    sharedAt: access?.createdAt || null
+                };
+            });
+        }
+
         res.status(200).json({
-            spaces: spaces.map(space => ({
-                _id: space._id,
-                name: space.name,
-                description: space.description,
-                shareHash: linkMap.get(space._id.toString()) || null
-            })),
+            spaces: ownedSpaces,
+            sharedSpaces: includeShared ? sharedSpaces : [],
             currentCount: spaces.length,
             limit: getSpaceLimit(user.subscriptionPlan),
             plan: user.subscriptionPlan || "free",
@@ -640,26 +675,55 @@ app.get("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
 
     const requestedSpaceId = typeof req.query.spaceId === "string" ? req.query.spaceId : undefined;
 
-    const space = await getUserSpace(user._id, requestedSpaceId);
-
-    if(!space){
-        res.status(404).json({ message: "Space not found" });
-        return;
+    // Check if it's a shared space
+    let isSharedSpace = false;
+    if (requestedSpaceId) {
+        const shareAccess = await ShareAccessModel.findOne({
+            resourceType: 'space',
+            resourceId: requestedSpaceId,
+            sharedWithId: user._id
+        });
+        isSharedSpace = !!shareAccess;
     }
 
-    await ContentModel.updateMany(
-        { userId: user._id, $or: [{ spaceId: { $exists: false } }, { spaceId: null }] },
-        { $set: { spaceId: space._id } }
-    );
+    let space;
+    if (isSharedSpace) {
+        // For shared spaces, fetch the space directly
+        space = await SpaceModel.findById(requestedSpaceId);
+        if (!space) {
+            res.status(404).json({ message: "Space not found" });
+            return;
+        }
+    } else {
+        // For owned spaces, use the existing logic
+        space = await getUserSpace(user._id, requestedSpaceId);
+        if(!space){
+            res.status(404).json({ message: "Space not found" });
+            return;
+        }
+    }
 
-    const content = await ContentModel.find({userId: user._id, spaceId: space._id}).populate({
+    // Only update content for owned spaces
+    if (!isSharedSpace) {
+        await ContentModel.updateMany(
+            { userId: user._id, $or: [{ spaceId: { $exists: false } }, { spaceId: null }] },
+            { $set: { spaceId: space._id } }
+        );
+    }
+
+    // Fetch content - for shared spaces, get content from the space owner
+    const content = await ContentModel.find({
+        spaceId: space._id,
+        ...(isSharedSpace ? {} : { userId: user._id })
+    }).populate({
         path: "userId",
         select: "email firstName lastName"
     });
 
     res.status(200).json({
         content,
-        spaceId: space._id
+        spaceId: space._id,
+        isShared: isSharedSpace
     })
 })
 
@@ -1004,6 +1068,231 @@ app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Re
         contents,
         isSingleItem: false
     });
+});
+
+// User-to-user sharing endpoints
+// Search users by email
+app.get("/api/v1/users/search", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { email } = req.query;
+        const currentUserId = req.user._id;
+
+        if (!email || typeof email !== 'string' || email.length < 3) {
+            res.status(400).json({ message: "Email query must be at least 3 characters" });
+            return;
+        }
+
+        const users = await UserModel.find({
+            email: { $regex: email, $options: 'i' },
+            _id: { $ne: currentUserId } // Exclude current user
+        })
+        .select('email firstName lastName')
+        .limit(10);
+
+        res.status(200).json({ users });
+    } catch (error) {
+        console.error("Error searching users:", error);
+        res.status(500).json({ message: "Error searching users" });
+    }
+});
+
+// Share space/content with users
+app.post("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { resourceType, resourceId, userIds } = req.body;
+        const ownerId = req.user._id;
+
+        if (!['space', 'content'].includes(resourceType)) {
+            res.status(400).json({ message: "Invalid resource type" });
+            return;
+        }
+
+        if (!Array.isArray(userIds) || userIds.length === 0) {
+            res.status(400).json({ message: "User IDs array required" });
+            return;
+        }
+
+        // Verify ownership
+        if (resourceType === 'space') {
+            const space = await SpaceModel.findOne({ _id: resourceId, userId: ownerId });
+            if (!space) {
+                res.status(404).json({ message: "Space not found or access denied" });
+                return;
+            }
+        } else {
+            const content = await ContentModel.findOne({ _id: resourceId, userId: ownerId });
+            if (!content) {
+                res.status(404).json({ message: "Content not found or access denied" });
+                return;
+            }
+        }
+
+        // Verify all users exist
+        const users = await UserModel.find({ _id: { $in: userIds } });
+        if (users.length !== userIds.length) {
+            res.status(400).json({ message: "Some users not found" });
+            return;
+        }
+
+        // Create share access records
+        const shareAccesses = [];
+        for (const userId of userIds) {
+            try {
+                const shareAccess = await ShareAccessModel.findOneAndUpdate(
+                    { resourceType, resourceId, sharedWithId: userId },
+                    { ownerId, permissions: 'read' },
+                    { upsert: true, new: true }
+                );
+                shareAccesses.push(shareAccess);
+            } catch (error: any) {
+                // Ignore duplicate key errors
+                if (error.code !== 11000) {
+                    throw error;
+                }
+            }
+        }
+
+        res.status(200).json({ 
+            message: "Shared successfully",
+            sharedWith: userIds.length
+        });
+    } catch (error) {
+        console.error("Error sharing with users:", error);
+        res.status(500).json({ message: "Error sharing with users" });
+    }
+});
+
+// Get users a resource is shared with
+app.get("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { resourceType, resourceId } = req.query;
+        const ownerId = req.user._id;
+
+        if (!['space', 'content'].includes(resourceType as string)) {
+            res.status(400).json({ message: "Invalid resource type" });
+            return;
+        }
+
+        // Verify ownership
+        if (resourceType === 'space') {
+            const space = await SpaceModel.findOne({ _id: resourceId, userId: ownerId });
+            if (!space) {
+                res.status(404).json({ message: "Space not found or access denied" });
+                return;
+            }
+        } else {
+            const content = await ContentModel.findOne({ _id: resourceId, userId: ownerId });
+            if (!content) {
+                res.status(404).json({ message: "Content not found or access denied" });
+                return;
+            }
+        }
+
+        const shareAccesses = await ShareAccessModel.find({
+            resourceType,
+            resourceId,
+            ownerId
+        }).populate({
+            path: 'sharedWithId',
+            select: 'email firstName lastName'
+        });
+
+        res.status(200).json({ 
+            sharedWith: shareAccesses.map(sa => ({
+                userId: sa.sharedWithId,
+                permissions: sa.permissions,
+                sharedAt: sa.createdAt
+            }))
+        });
+    } catch (error) {
+        console.error("Error fetching shared users:", error);
+        res.status(500).json({ message: "Error fetching shared users" });
+    }
+});
+
+// Remove sharing with a user
+app.delete("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { resourceType, resourceId, userId } = req.body;
+        const ownerId = req.user._id;
+
+        if (!['space', 'content'].includes(resourceType)) {
+            res.status(400).json({ message: "Invalid resource type" });
+            return;
+        }
+
+        const result = await ShareAccessModel.deleteOne({
+            resourceType,
+            resourceId,
+            ownerId,
+            sharedWithId: userId
+        });
+
+        if (result.deletedCount === 0) {
+            res.status(404).json({ message: "Share access not found" });
+            return;
+        }
+
+        res.status(200).json({ message: "Sharing removed successfully" });
+    } catch (error) {
+        console.error("Error removing share:", error);
+        res.status(500).json({ message: "Error removing share" });
+    }
+});
+
+// Get spaces/content shared with current user
+app.get("/api/v1/shared-with-me", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { resourceType } = req.query;
+        const userId = req.user._id;
+
+        if (resourceType && !['space', 'content'].includes(resourceType as string)) {
+            res.status(400).json({ message: "Invalid resource type" });
+            return;
+        }
+
+        const query: any = { sharedWithId: userId };
+        if (resourceType) {
+            query.resourceType = resourceType;
+        }
+
+        const shareAccesses = await ShareAccessModel.find(query)
+            .populate({
+                path: 'ownerId',
+                select: 'email firstName lastName'
+            })
+            .sort({ createdAt: -1 });
+
+        const result: any = { spaces: [], content: [] };
+
+        for (const access of shareAccesses) {
+            if (access.resourceType === 'space') {
+                const space = await SpaceModel.findById(access.resourceId);
+                if (space) {
+                    result.spaces.push({
+                        ...space.toObject(),
+                        sharedBy: access.ownerId,
+                        sharedAt: access.createdAt
+                    });
+                }
+            } else {
+                const content = await ContentModel.findById(access.resourceId)
+                    .populate({ path: 'userId', select: 'email firstName lastName' });
+                if (content) {
+                    result.content.push({
+                        ...content.toObject(),
+                        sharedBy: access.ownerId,
+                        sharedAt: access.createdAt
+                    });
+                }
+            }
+        }
+
+        res.status(200).json(result);
+    } catch (error) {
+        console.error("Error fetching shared resources:", error);
+        res.status(500).json({ message: "Error fetching shared resources" });
+    }
 });
 
 const uploadDir = path.join(__dirname, "uploads");

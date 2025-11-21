@@ -18,14 +18,24 @@ type Space = {
     name: string;
     description?: string;
     shareHash: string | null;
+    isShared?: boolean;
+    sharedBy?: {
+        _id: string;
+        email: string;
+        firstName?: string;
+        lastName?: string;
+    };
+    sharedAt?: string;
 };
 
 function SpacesPage() {
     const [spaces, setSpaces] = useState<Space[]>([]);
+    const [sharedSpaces, setSharedSpaces] = useState<Space[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [formOpen, setFormOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [activeTab, setActiveTab] = useState<"my" | "shared">("my");
     const [plan, setPlan] = useState<"free" | "pro">("free");
     const [spaceLimit, setSpaceLimit] = useState<number>(3);
     const [spaceCount, setSpaceCount] = useState<number>(0);
@@ -50,9 +60,11 @@ function SpacesPage() {
         try {
             const token = localStorage.getItem("token") || "";
             const res = await axios.get(`${BACKEND_URL}/api/v1/spaces`, {
+                params: { includeShared: "true" },
                 headers: { Authorization: token },
             });
             setSpaces(res.data.spaces || []);
+            setSharedSpaces(res.data.sharedSpaces || []);
             setPlan(res.data.plan || "free");
             setSpaceLimit(res.data.limit || 3);
             setSpaceCount(res.data.currentCount || (res.data.spaces || []).length || 0);
@@ -120,15 +132,15 @@ function SpacesPage() {
         setError(null);
         try {
             const token = localStorage.getItem("token") || "";
-            const res = await axios.post(`${BACKEND_URL}/api/v1/spaces`, {
+            await axios.post(`${BACKEND_URL}/api/v1/spaces`, {
                 name: name.trim(),
                 description: description.trim() ? description.trim() : undefined,
             }, {
                 headers: { Authorization: token }
             });
-            setSpaces(prev => [...prev, res.data.space]);
+            // Refresh spaces to get updated list including any new shared spaces
+            await fetchSpaces();
             setFormOpen(false);
-            setSpaceCount(prev => prev + 1);
         } catch (e: any) {
             const message = e?.response?.data?.message || "Failed to create space.";
             setError(message);
@@ -215,7 +227,6 @@ function SpacesPage() {
     }
 
     const usagePercent = spaceLimit > 0 ? Math.min((spaceCount / spaceLimit) * 100, 100) : 0;
-    const sharedSpaces = spaces.filter(s => s.shareHash).length;
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -316,7 +327,7 @@ function SpacesPage() {
                         </div>
 
                         {/* Usage Stats */}
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 md:gap-4">
                             <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
                                 <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Plan</div>
                                 <div className="text-base md:text-lg font-semibold text-gray-900">
@@ -328,14 +339,18 @@ function SpacesPage() {
                                 </div>
                             </div>
                             <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
-                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Spaces</div>
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">My Spaces</div>
                                 <div className="text-base md:text-lg font-semibold text-gray-900">
                                     {spaceCount} {plan === "pro" ? "" : `of ${spaceLimit}`}
                                 </div>
                             </div>
                             <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
-                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Shared</div>
-                                <div className="text-base md:text-lg font-semibold text-gray-900">{sharedSpaces}</div>
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Shared With Me</div>
+                                <div className="text-base md:text-lg font-semibold text-gray-900">{sharedSpaces.length}</div>
+                            </div>
+                            <div className="p-3 md:p-4 rounded-lg bg-gray-50 border border-gray-100 hover:bg-gray-100/50 transition-colors">
+                                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1.5">Total</div>
+                                <div className="text-base md:text-lg font-semibold text-gray-900">{spaces.length + sharedSpaces.length}</div>
                             </div>
                         </div>
 
@@ -420,6 +435,32 @@ function SpacesPage() {
                     atLimit={atLimit}
                 />
 
+                {/* Tabs */}
+                <div className="mb-6">
+                    <div className="flex gap-2 border-b border-gray-200">
+                        <button
+                            onClick={() => setActiveTab("my")}
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "my"
+                                    ? "border-indigo-600 text-indigo-600"
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                        >
+                            My Spaces ({spaces.length})
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("shared")}
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
+                                activeTab === "shared"
+                                    ? "border-indigo-600 text-indigo-600"
+                                    : "border-transparent text-gray-500 hover:text-gray-700"
+                            }`}
+                        >
+                            Shared With Me ({sharedSpaces.length})
+                        </button>
+                    </div>
+                </div>
+
                 {/* Spaces Grid */}
                 {loading ? (
                     <div className="flex items-center justify-center py-20">
@@ -428,68 +469,126 @@ function SpacesPage() {
                             <p className="text-sm text-gray-600">Loading spaces...</p>
                         </div>
                     </div>
-                ) : spaces.length === 0 ? (
-                    <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 md:p-12 text-center">
-                        <div className="max-w-sm mx-auto">
-                            <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 bg-gray-100 rounded-xl flex items-center justify-center">
-                                <PlusIcon className="w-7 h-7 md:w-8 md:h-8 text-gray-400" />
+                ) : activeTab === "my" ? (
+                    spaces.length === 0 ? (
+                        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 md:p-12 text-center">
+                            <div className="max-w-sm mx-auto">
+                                <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 bg-gray-100 rounded-xl flex items-center justify-center">
+                                    <PlusIcon className="w-7 h-7 md:w-8 md:h-8 text-gray-400" />
+                                </div>
+                                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No spaces yet</h3>
+                                <p className="text-xs md:text-sm text-gray-600 mb-6">
+                                    Create your first space to start organizing your content.
+                                </p>
+                                <Button 
+                                    variant="primary" 
+                                    size="md" 
+                                    title="Create Your First Space" 
+                                    startIcon={<PlusIcon />} 
+                                    onClick={() => setFormOpen(true)} 
+                                    disabled={plan === "free" && atLimit} 
+                                />
                             </div>
-                            <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No spaces yet</h3>
-                            <p className="text-xs md:text-sm text-gray-600 mb-6">
-                                Create your first space to start organizing your content.
-                            </p>
-                            <Button 
-                                variant="primary" 
-                                size="md" 
-                                title="Create Your First Space" 
-                                startIcon={<PlusIcon />} 
-                                onClick={() => setFormOpen(true)} 
-                                disabled={plan === "free" && atLimit} 
-                            />
                         </div>
-                    </div>
-                ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
-                        {spaces.map((space) => (
-                            <div 
-                                key={space._id} 
-                                className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col group"
-                            >
-                                <div className="flex-1">
-                                    <div className="flex items-start justify-between mb-3 gap-2">
-                                        <h3 className="text-base md:text-lg font-semibold text-gray-900 truncate flex-1 pr-2 group-hover:text-indigo-600 transition-colors">
-                                            {space.name}
-                                        </h3>
-                                        {space.shareHash && (
-                                            <span className="flex-shrink-0 text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
-                                                Shared
-                                            </span>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                            {spaces.map((space) => (
+                                <div 
+                                    key={space._id} 
+                                    className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col group"
+                                >
+                                    <div className="flex-1">
+                                        <div className="flex items-start justify-between mb-3 gap-2">
+                                            <h3 className="text-base md:text-lg font-semibold text-gray-900 truncate flex-1 pr-2 group-hover:text-indigo-600 transition-colors">
+                                                {space.name}
+                                            </h3>
+                                            {space.shareHash && (
+                                                <span className="flex-shrink-0 text-xs font-medium text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                                                    Public
+                                                </span>
+                                            )}
+                                        </div>
+                                        {space.description ? (
+                                            <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-4">{space.description}</p>
+                                        ) : (
+                                            <p className="text-xs md:text-sm text-gray-400 italic mb-4">No description</p>
                                         )}
                                     </div>
-                                    {space.description ? (
-                                        <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-4">{space.description}</p>
-                                    ) : (
-                                        <p className="text-xs md:text-sm text-gray-400 italic mb-4">No description</p>
-                                    )}
+                                    <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+                                        <Button 
+                                            variant="primary" 
+                                            size="md" 
+                                            title="Open" 
+                                            onClick={() => openSpace(space._id)}
+                                            className="flex-1"
+                                        />
+                                        <Button 
+                                            variant="secondary" 
+                                            size="md" 
+                                            title="Share" 
+                                            onClick={() => navigate(`/user/dashboard?spaceId=${space._id}&share=1`)}
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
-                                    <Button 
-                                        variant="primary" 
-                                        size="md" 
-                                        title="Open" 
-                                        onClick={() => openSpace(space._id)}
-                                        className="flex-1"
-                                    />
-                                    <Button 
-                                        variant="secondary" 
-                                        size="md" 
-                                        title="Share" 
-                                        onClick={() => navigate(`/user/dashboard?spaceId=${space._id}&share=1`)}
-                                    />
+                            ))}
+                        </div>
+                    )
+                ) : (
+                    sharedSpaces.length === 0 ? (
+                        <div className="bg-white rounded-xl border-2 border-dashed border-gray-300 p-8 md:p-12 text-center">
+                            <div className="max-w-sm mx-auto">
+                                <div className="w-14 h-14 md:w-16 md:h-16 mx-auto mb-4 bg-indigo-100 rounded-xl flex items-center justify-center">
+                                    <svg className="w-7 h-7 md:w-8 md:h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                                    </svg>
                                 </div>
+                                <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-2">No shared spaces</h3>
+                                <p className="text-xs md:text-sm text-gray-600 mb-6">
+                                    Spaces shared with you by other users will appear here.
+                                </p>
                             </div>
-                        ))}
-                    </div>
+                        </div>
+                    ) : (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
+                            {sharedSpaces.map((space) => {
+                                const ownerName = space.sharedBy 
+                                    ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
+                                    : "Unknown";
+                                return (
+                                    <div 
+                                        key={space._id} 
+                                        className="bg-white border border-indigo-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-400 transition-all duration-200 flex flex-col group"
+                                    >
+                                        <div className="flex-1">
+                                            <div className="flex items-start justify-between mb-3 gap-2">
+                                                <h3 className="text-base md:text-lg font-semibold text-gray-900 truncate flex-1 pr-2 group-hover:text-indigo-600 transition-colors">
+                                                    {space.name}
+                                                </h3>
+                                                <span className="flex-shrink-0 text-xs font-medium text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200">
+                                                    Shared
+                                                </span>
+                                            </div>
+                                            {space.description ? (
+                                                <p className="text-xs md:text-sm text-gray-600 line-clamp-2 mb-2">{space.description}</p>
+                                            ) : (
+                                                <p className="text-xs md:text-sm text-gray-400 italic mb-2">No description</p>
+                                            )}
+                                            <p className="text-xs text-indigo-600 mb-4">by {ownerName}</p>
+                                        </div>
+                                        <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
+                                            <Button 
+                                                variant="primary" 
+                                                size="md" 
+                                                title="Open" 
+                                                onClick={() => openSpace(space._id)}
+                                                className="flex-1"
+                                            />
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )
                 )}
             </main>
         </div>
