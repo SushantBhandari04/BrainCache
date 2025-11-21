@@ -1,4 +1,3 @@
-import { Input } from "./Input";
 import { Button } from "./button";
 import { CrossIcon, DocumentIcon } from "./icons";
 import { TypeInput } from "./TypeInput";

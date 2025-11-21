@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
+import { BACKEND_URL } from "../config";
 
 interface ShareItemModalProps {
   open: boolean;
@@ -15,7 +14,6 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
   const [shareHash, setShareHash] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
   const shareLink = useMemo(
     () => (shareHash ? `${window.location.origin}/share/${shareHash}` : ""),

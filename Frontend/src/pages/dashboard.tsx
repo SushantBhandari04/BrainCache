@@ -29,7 +29,7 @@ function Dashboard() {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [content, setContent] = useState<{ title: string; link: string; type: Type; _id: ObjectId }[]>([]);
-  const [profile, setProfile] = useState<{ username: string; firstName?: string; lastName?: string } | null>(null);
+  const [profile, setProfile] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Type | "all">("all");
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -415,7 +415,7 @@ function Dashboard() {
           />
           <img
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-              `${profile?.firstName || ""} ${profile?.lastName || profile?.username || "User"}`.trim()
+              `${profile?.firstName || ""} ${profile?.lastName || profile?.email || "User"}`.trim()
             )}`}
             alt="Profile"
             title="Profile"

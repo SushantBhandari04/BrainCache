@@ -1,100 +1,263 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import SignPage from "./signPage";
-import { useRef, useState } from "react";
 import axios from "axios";
+import { GoogleLogin, CredentialResponse } from "@react-oauth/google";
+import { AlertTriangle, CheckCircle2, Mail, ShieldCheck } from "lucide-react";
 import { BACKEND_URL } from "../config";
+import { Logo } from "../components/Logo";
+import { Button } from "../components/button";
+import { useAppConfig } from "../context/AppConfigContext";
+
+type Status = {
+  type: "error" | "success";
+  message: string;
+} | null;
 
 function Signin() {
-  const usernameRef = useRef<HTMLInputElement | null>(null);
-  const passwordRef = useRef<HTMLInputElement | null>(null);
-  const navigate = useNavigate();
-
-  // Separate state for username, password, and general messages
-  const [usernameError, setUsernameError] = useState<string | null>(null);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
-  const [generalMessage, setGeneralMessage] = useState<string | null>(null);
+  const [email, setEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [status, setStatus] = useState<Status>(null);
+  const navigate = useNavigate();
+  const { googleClientId } = useAppConfig();
+  const googleEnabled = !!googleClientId;
 
-  async function signInButton() {
-    setUsernameError(null);
-    setPasswordError(null);
-    setGeneralMessage(null);
+  function setError(message: string) {
+    setStatus({ type: "error", message });
+  }
+
+  function setSuccess(message: string) {
+    setStatus({ type: "success", message });
+  }
+
+  async function handleGoogleAuth(response: CredentialResponse) {
+    if (!response.credential) {
+      setError("Google sign-in failed. Please try again.");
+      return;
+    }
     setLoading(true);
-
     try {
-      const username = usernameRef.current?.value?.trim();
-      const password = passwordRef.current?.value;
-
-      if (!username) {
-        setUsernameError("Username cannot be empty.");
-        setLoading(false);
-        return;
-      }
-
-      if (!password) {
-        setPasswordError("Password cannot be empty.");
-        setLoading(false);
-        return;
-      }
-
-      const response = await axios.post(`${BACKEND_URL}/api/v1/signin`, {
-        username,
-        password,
+      const res = await axios.post(`${BACKEND_URL}/api/v1/auth/google`, {
+        idToken: response.credential,
+        firstName: firstName || undefined,
+        lastName: lastName || undefined
       });
-
-      if (response.status === 200) {
-        localStorage.setItem("token", response.data.token);
-        setGeneralMessage("✅ Signed in successfully! Redirecting...");
-        setTimeout(() => navigate("/user/spaces"), 1000);
-      } else {
-        handleErrors(response.data.message);
-      }
-    } catch (e) {
-      if (axios.isAxiosError(e) && e.response) {
-        handleErrors(e.response.data.message);
-      } else {
-        console.error("Error:", e);
-        setGeneralMessage("⚠️ An unexpected error occurred. Please try again later.");
-      }
+      localStorage.setItem("token", res.data.token);
+      setSuccess("Signed in with Google! Redirecting...");
+      setTimeout(() => navigate("/user/spaces"), 600);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Google sign-in failed.";
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
 
-  function handleErrors(message: string) {
-    switch (message) {
-      case "User does not exist!":
-        setUsernameError("This user does not exist.");
-        break;
-      case "Invalid credentials!":
-        setUsernameError("Username must be 3–20 characters long.");
-        setPasswordError("Password must be 8–20 characters long, including uppercase, lowercase, number, and special character.");
-        break;
-      case "Username must be at least 6 characters":
-        setUsernameError("Username must be at least 6 characters long.");
-        break;
-      case "Password must include a number":
-        setPasswordError("Password must include at least one number.");
-        break;
-      default:
-        setGeneralMessage(message);
+  async function requestOtp() {
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    setOtpLoading(true);
+    setStatus(null);
+    try {
+      const res = await axios.post(`${BACKEND_URL}/api/v1/auth/request-otp`, { email: email.trim() });
+      setOtpSent(true);
+      setSuccess(res.data.message || "OTP sent to your email.");
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Unable to send OTP right now.";
+      setError(message);
+    } finally {
+      setOtpLoading(false);
+    }
+  }
+
+  async function verifyOtp() {
+    if (!email.trim()) {
+      setError("Please enter your email address.");
+      return;
+    }
+    if (!otp.trim()) {
+      setError("Enter the 6-digit OTP you received.");
+      return;
+    }
+    setLoading(true);
+    setStatus(null);
+    try {
+      const payload: Record<string, string> = {
+        email: email.trim(),
+        otp: otp.trim()
+      };
+      if (firstName.trim()) payload.firstName = firstName.trim();
+      if (lastName.trim()) payload.lastName = lastName.trim();
+      const res = await axios.post(`${BACKEND_URL}/api/v1/auth/verify-otp`, payload);
+      localStorage.setItem("token", res.data.token);
+      setSuccess("Signed in! Redirecting to your spaces...");
+      setTimeout(() => navigate("/user/spaces"), 800);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || "Unable to verify OTP right now.";
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <SignPage
-      title="Sign In"
-      buttonOnClick={signInButton}
-      usernameRef={usernameRef}
-      passwordRef={passwordRef}
-      subTitle="Don't have an account?"
-      linkPath="/user/signup"
-      linkName="Signup"
-      usernameError={usernameError ?? undefined}
-      passwordError={passwordError ?? undefined}
-      generalMessage={generalMessage ?? undefined}
-      loading={loading}
-    />
+    <div className="min-h-screen w-full flex flex-col md:flex-row bg-gradient-to-br from-indigo-900 via-indigo-800 to-slate-900 text-white">
+      <div className="relative w-full md:w-1/2 h-[40vh] md:h-screen">
+        <img
+          src="../../images/signup-image.jpg"
+          alt="BrainCache"
+          className="absolute inset-0 w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/50 via-indigo-900/60 to-black/80" />
+        <div className="absolute bottom-12 left-8 right-8 space-y-4">
+          <Logo />
+          <p className="text-lg text-indigo-100 max-w-md">
+            Capture every idea, link, and inspiration. BrainCache keeps your knowledge organized with powerful sharing and collaboration.
+          </p>
+          <div className="flex items-center gap-3 text-sm text-indigo-100">
+            <ShieldCheck className="w-5 h-5 text-emerald-300" />
+            Secure by design — choose Google or OTP sign-in.
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex items-center justify-center px-6 py-12">
+        <div className="w-full max-w-xl bg-white/10 backdrop-blur-lg border border-white/10 rounded-3xl shadow-2xl p-8 space-y-8">
+          <div className="text-center space-y-2">
+            <p className="text-sm uppercase tracking-[0.3em] text-indigo-200">Welcome to BrainCache</p>
+            <h1 className="text-3xl font-semibold">Sign in or create an account</h1>
+            <p className="text-indigo-100 text-sm">No passwords. Pick your favorite method below.</p>
+          </div>
+
+          {googleEnabled && (
+            <div className="space-y-4">
+              <GoogleLogin
+                onSuccess={handleGoogleAuth}
+                onError={() => setError("Google sign-in failed. Please try again.")}
+                shape="pill"
+                text="continue_with"
+                size="large"
+                logo_alignment="center"
+                useOneTap={false}
+              />
+              <p className="text-center text-xs uppercase tracking-[0.4em] text-indigo-200">OR</p>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <TextInput
+                label="Email"
+                type="email"
+                icon={<Mail className="w-4 h-4" />}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
+              <TextInput
+                label="First name (optional)"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+              <TextInput
+                label="Last name (optional)"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+              {otpSent && (
+                <TextInput
+                  label="Enter OTP"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  inputMode="numeric"
+                />
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3">
+              <Button
+                variant="secondary"
+                size="md"
+                title={otpSent ? "Resend OTP" : "Send OTP"}
+                onClick={requestOtp}
+                disabled={otpLoading}
+              />
+              <Button
+                variant="primary"
+                size="md"
+                title={loading ? "Please wait..." : "Verify & Sign In"}
+                onClick={verifyOtp}
+                disabled={loading || !otpSent}
+              />
+            </div>
+            {!googleEnabled && (
+              <p className="text-xs text-indigo-200 text-center">
+                Google sign-in is currently disabled. Use email OTP instead.
+              </p>
+            )}
+          </div>
+
+          {status && (
+            <div
+              className={`flex items-center gap-2 text-sm rounded-xl px-4 py-3 ${
+                status.type === "success"
+                  ? "bg-emerald-500/20 text-emerald-100 border border-emerald-500/40"
+                  : "bg-red-500/20 text-red-100 border border-red-500/40"
+              }`}
+            >
+              {status.type === "success" ? (
+                <CheckCircle2 className="w-4 h-4" />
+              ) : (
+                <AlertTriangle className="w-4 h-4" />
+              )}
+              <span>{status.message}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TextInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+  icon,
+  maxLength,
+  inputMode
+}: {
+  label: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  type?: string;
+  icon?: React.ReactNode;
+  maxLength?: number;
+  inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"];
+}) {
+  return (
+    <label className="text-sm text-indigo-100 space-y-1 flex flex-col">
+      <span>{label}</span>
+      <div className="relative">
+        {icon && <span className="absolute left-4 top-1/2 -translate-y-1/2 text-indigo-200">{icon}</span>}
+        <input
+          className={`w-full h-12 rounded-full bg-white/15 border border-white/20 text-white placeholder:text-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-300 focus:bg-white/20 transition px-4 ${icon ? "pl-11" : ""
+            }`}
+          value={value}
+          onChange={onChange}
+          type={type}
+          maxLength={maxLength}
+          inputMode={inputMode}
+        />
+      </div>
+    </label>
   );
 }
 

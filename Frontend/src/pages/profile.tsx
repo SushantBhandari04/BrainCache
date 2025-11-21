@@ -7,7 +7,7 @@ import { useNavigate } from "react-router-dom";
 function Profile() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [profile, setProfile] = useState<{ username: string; firstName?: string; lastName?: string; address?: string } | null>(null);
+  const [profile, setProfile] = useState<{ email: string; firstName?: string; lastName?: string; address?: string } | null>(null);
   const [editing, setEditing] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -72,8 +72,8 @@ function Profile() {
         </div>
         <div className="bg-white shadow rounded-lg p-6 space-y-4">
           <div>
-            <div className="text-gray-500 text-sm">Username</div>
-            <div className="text-gray-900">{profile.username}</div>
+            <div className="text-gray-500 text-sm">Email</div>
+            <div className="text-gray-900">{profile.email}</div>
           </div>
           {!editing ? (
             <>

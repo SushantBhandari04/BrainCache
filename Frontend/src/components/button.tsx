@@ -1,7 +1,7 @@
 import { ReactElement } from "react";
 
 interface ButtonProps {
-    variant: "primary" | "secondary" | "tertiary" | "danger";
+    variant: "primary" | "secondary" | "tertiary" | "danger" | "outline";
     size: "sm" | "md" | "lg";
     title: string;
     startIcon?: ReactElement;
@@ -15,7 +15,8 @@ const buttonColor = {
     primary: "bg-violet-500 text-white rounded-md hover:bg-violet-600 active:bg-violet-700 disabled:bg-gray-300",
     secondary: "bg-violet-200 text-violet-500 rounded-md hover:bg-violet-300 active:bg-violet-400 disabled:bg-gray-200",
     tertiary: "bg-yellow-400 text-black rounded-full hover:bg-yellow-500 active:bg-yellow-600 disabled:bg-gray-300",
-    danger: "border-2 bg-red-100 border-red-200 text-red-500 rounded-md hover:bg-red-200 active:bg-red-700 disabled:bg-gray-300"
+    danger: "border-2 bg-red-100 border-red-200 text-red-500 rounded-md hover:bg-red-200 active:bg-red-700 disabled:bg-gray-300",
+    outline: "border-2 rounded-md",
 };
 
 const buttonSize = {

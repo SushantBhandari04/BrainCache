@@ -13,7 +13,9 @@ export function SharedDashboard() {
         type: Type;
         _id: string;
         userId?: {
-            username?: string;
+            email?: string;
+            firstName?: string;
+            lastName?: string;
             _id?: string;
         };
     }
@@ -26,7 +28,14 @@ export function SharedDashboard() {
     const { hash } = useParams();
     const [isLoading, setIsLoading] = useState(true);
     const [isSingleItem, setIsSingleItem] = useState(false);
-    const [username, setUsername] = useState<string | null>(null);
+    const [ownerName, setOwnerName] = useState<string | null>(null);
+
+    const resolveOwnerName = (item?: ContentItem) => {
+        if (!item?.userId) return null;
+        const fullName = `${item.userId.firstName || ""} ${item.userId.lastName || ""}`.trim();
+        if (fullName) return fullName;
+        return item.userId.email || null;
+    };
 
     const filteredContent = useMemo(() => {
         return content.filter((item) => {
@@ -60,17 +69,17 @@ export function SharedDashboard() {
                 if (data.isSingleItem && data.contents && data.contents.length > 0) {
                     setContent(data.contents);
                     setIsSingleItem(true);
-                    // Try to get the username if available
-                    if (data.contents[0]?.userId?.username) {
-                        setUsername(data.contents[0].userId.username);
+                    const owner = resolveOwnerName(data.contents[0]);
+                    if (owner) {
+                        setOwnerName(owner);
                     }
                 } else {
                     // For full brain share
                     setContent(data.contents || []);
                     setIsSingleItem(false);
-                    // Try to get the username if available
-                    if (data.contents?.[0]?.userId?.username) {
-                        setUsername(data.contents[0].userId.username);
+                    const owner = resolveOwnerName(data.contents?.[0]);
+                    if (owner) {
+                        setOwnerName(owner);
                     }
                 }
             } catch (error) {
@@ -137,9 +146,9 @@ export function SharedDashboard() {
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-gray-900 mb-1">
                         {isSingleItem ? 'Shared Content' : 'Shared Brain'}
-                        {username && (
+                        {ownerName && (
                             <span className="text-lg font-normal text-gray-500 ml-2">
-                                by @{username}
+                                by {ownerName}
                             </span>
                         )}
                     </h1>

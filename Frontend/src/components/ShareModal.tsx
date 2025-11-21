@@ -59,6 +59,7 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
     const [error, setError] = useState<string | null>(null);
     const shareLink = useMemo(() => currentHash ? `${window.location.origin}/share/${currentHash}` : "", [currentHash]);
     const shareTitle = useMemo(() => spaceName ? `Check out my "${spaceName}" BrainCache space` : "Check out my BrainCache space", [spaceName]);
+    const canUseNativeShare = typeof window !== "undefined" && typeof (navigator as Navigator & { share?: Navigator["share"] | undefined }).share === "function";
 
     async function fetchShareState() {
         if (!spaceId) return;
@@ -215,7 +216,7 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
                                             <span className="text-sm font-semibold text-gray-800">Email</span>
                                             <span className="text-xs text-gray-500">Send via mail</span>
                                         </button>
-                                        <button onClick={nativeShare} disabled={!navigator.share} className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 transition-all ${navigator.share ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
+                                        <button onClick={nativeShare} disabled={!canUseNativeShare} className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 transition-all ${canUseNativeShare ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
                                             <SystemBadge />
                                             <span className="text-sm font-semibold text-gray-800">More</span>
                                             <span className="text-xs text-gray-500">Device share sheet</span>
