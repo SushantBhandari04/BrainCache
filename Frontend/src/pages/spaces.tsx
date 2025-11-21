@@ -80,7 +80,10 @@ function SpacesPage() {
         const handleLoad = () => setRazorpayReady(true);
 
         if (script) {
-            if (script.getAttribute("data-loaded") === "true") {
+            const alreadyLoaded = script.getAttribute("data-loaded") === "true"
+                || typeof window.Razorpay !== "undefined"
+                || ("readyState" in script && script.readyState === "complete");
+            if (alreadyLoaded) {
                 setRazorpayReady(true);
             } else {
                 script.addEventListener("load", handleLoad);
