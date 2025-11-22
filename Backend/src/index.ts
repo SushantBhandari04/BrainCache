@@ -67,9 +67,23 @@ const CreateSpaceSchema = z.object({
 
 const CreateContentSchema = z.object({
     title: z.string().min(1).max(200),
-    link: z.string().min(1),
-    type: z.enum(["youtube","twitter","document","link"]),
+    link: z.string().optional(),
+    body: z.string().optional(),
+    type: z.enum(["youtube","twitter","document","link","article","note"]),
     spaceId: objectIdSchema
+}).refine((data) => {
+    // For note type, body or link is required
+    if (data.type === "note") {
+        return !!(data.body || data.link);
+    }
+    // For document type, link is optional (can have file upload)
+    if (data.type === "document") {
+        return true;
+    }
+    // For all other types, link is required
+    return !!data.link;
+}, {
+    message: "Link is required for this content type, or body is required for notes"
 });
 
 const ShareToggleSchema = z.object({
@@ -632,7 +646,7 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
         return;
     }
 
-    const { link, type, title, spaceId } = parsed.data;
+    const { link, type, title, spaceId, body } = parsed.data;
 
     try{
         // First check if user owns the space
@@ -660,7 +674,8 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
         }
 
         const newContent = await ContentModel.create({
-            link,
+            link: link || undefined,
+            body: body || undefined,
             type,
             title,
             userId: user._id,
@@ -1074,7 +1089,22 @@ app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
             }
              res.status(200).json({
                 contents: [content],
-                isSingleItem: true
+                isSingleItem: true,
+                spaceId: content.spaceId?.toString() || null
+            });
+            return;
+        }
+
+        // If it's a space share, get all content from that space
+        if (link.spaceId) {
+            const contents = await ContentModel.find({ spaceId: link.spaceId }).populate({
+                path: "userId",
+                select: "email firstName lastName"
+            });
+            res.status(200).json({
+                contents,
+                isSingleItem: false,
+                spaceId: link.spaceId.toString()
             });
             return;
         }
@@ -1086,7 +1116,8 @@ app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
         });
         res.status(200).json({
             contents,
-            isSingleItem: false
+            isSingleItem: false,
+            spaceId: null
         });
     } catch (error) {
         console.error("Error fetching shared content:", error);

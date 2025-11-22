@@ -4,6 +4,7 @@ import { Card } from "../components/Card";
 import { SearchIcon } from "../components/icons";
 import { Type } from "./dashboard";
 import { Logo } from "../components/Logo";
+import axios from "axios";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -30,6 +31,8 @@ export function SharedDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSingleItem, setIsSingleItem] = useState(false);
     const [ownerName, setOwnerName] = useState<string | null>(null);
+    const [canEdit, setCanEdit] = useState(false);
+    const [spaceId, setSpaceId] = useState<string | null>(null);
 
     const resolveOwnerName = (item?: ContentItem) => {
         if (!item?.userId) return null;
@@ -37,6 +40,21 @@ export function SharedDashboard() {
         if (fullName) return fullName;
         return item.userId.email || null;
     };
+
+    async function handleDelete(id: string) {
+        if (!canEdit) return;
+        try {
+            const token = localStorage.getItem("token") || "";
+            await axios.delete(`${BACKEND_URL}/api/v1/content`, {
+                data: { id },
+                headers: { Authorization: token }
+            });
+            setContent((prev) => prev.filter((item) => item._id !== id));
+        } catch (error) {
+            console.error("Failed to delete content", error);
+            alert("Failed to delete content. Please try again.");
+        }
+    }
 
     const filteredContent = useMemo(() => {
         return content.filter((item) => {
@@ -66,6 +84,11 @@ export function SharedDashboard() {
 
                 const data = await response.json();
                 
+                // Extract spaceId from response
+                if (data.spaceId) {
+                    setSpaceId(data.spaceId);
+                }
+                
                 // If it's a single item share, we'll get an array with one item
                 if (data.isSingleItem && data.contents && data.contents.length > 0) {
                     setContent(data.contents);
@@ -81,6 +104,30 @@ export function SharedDashboard() {
                     const owner = resolveOwnerName(data.contents?.[0]);
                     if (owner) {
                         setOwnerName(owner);
+                    }
+                }
+
+                // Check if user is authenticated and has edit permissions
+                const token = localStorage.getItem("token");
+                if (token && data.spaceId) {
+                    try {
+                        const permResponse = await axios.get(`${BACKEND_URL}/api/v1/shared-with-me`, {
+                            params: { resourceType: "space" },
+                            headers: { Authorization: token }
+                        });
+                        if (permResponse.data && permResponse.data.spaces) {
+                            // Check if current user has read-write access to this space
+                            const spaceAccess = permResponse.data.spaces.find((space: any) => 
+                                space._id === data.spaceId && space.permissions === "read-write"
+                            );
+                            if (spaceAccess) {
+                                setCanEdit(true);
+                            }
+                        }
+                    } catch (error) {
+                        // User might not have user-to-user sharing access, which is fine
+                        // Public link sharing remains read-only
+                        console.log("No user-to-user sharing access found");
                     }
                 }
             } catch (error) {
@@ -363,7 +410,8 @@ export function SharedDashboard() {
                                                 title={item.title}
                                                 link={item.link}
                                                 type={item.type}
-                                                readOnly={true}
+                                                readOnly={!canEdit}
+                                                onDelete={canEdit ? handleDelete : undefined}
                                             />
                                         </div>
                                     );

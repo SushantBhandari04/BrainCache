@@ -164,13 +164,26 @@ export function AddContentModal({
 
         // Save Content (PDF or Link)
         try {
-            const response = await axios.post(`${BACKEND_URL}/api/v1/content`, {
+            const linkValue = fileUrl || (selectedType === "note" ? linkRef.current?.value?.trim() || undefined : linkRef.current?.value?.trim() || undefined);
+            const bodyValue = selectedType === "note" ? bodyRef.current?.value?.trim() || undefined : undefined;
+            
+            const payload: any = {
                 title: titleRef.current?.value?.trim() || file?.name,
-                link: fileUrl || undefined,
-                body: bodyRef.current?.value?.trim() || undefined,
                 type: selectedType,
                 spaceId
-            }, {
+            };
+            
+            // Only include link if it has a value
+            if (linkValue) {
+                payload.link = linkValue;
+            }
+            
+            // Only include body if it has a value (for notes)
+            if (bodyValue) {
+                payload.body = bodyValue;
+            }
+            
+            const response = await axios.post(`${BACKEND_URL}/api/v1/content`, payload, {
                 headers: {
                     Authorization: localStorage.getItem("token")
                 }

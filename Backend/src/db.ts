@@ -37,7 +37,7 @@ mongoose.connection.once('open', async () => {
     }
 });
 
-const contentTypes = ['link','document',"youtube", "twitter"];
+const contentTypes = ['link','document',"youtube", "twitter", "article", "note"];
 
 const SpaceSchema = new Schema({
     name: {type: String, required: true},
@@ -49,7 +49,8 @@ const SpaceSchema = new Schema({
 
 const ContentSchema = new Schema({
     title: {type: String, required: true},
-    link: {type: String, required: true},
+    link: {type: String, required: false},
+    body: {type: String, required: false},
     type: {type: String, enum: contentTypes, required: true},
     userId: {type: ObjectId, ref: 'Users', required: true},
     spaceId: {type: ObjectId, ref: 'Spaces'},
