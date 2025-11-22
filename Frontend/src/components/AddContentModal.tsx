@@ -14,12 +14,13 @@ export function AddContentModal({
     spaceName
 }: { 
     setOpen: (prop: boolean) => void, 
-    setContent: Dispatch<SetStateAction<{ title: string; link: string; type: Type; _id: ObjectId }[]>>,
+    setContent: Dispatch<SetStateAction<{ title: string; link: string; type: Type; _id: ObjectId; body?: string }[]>>,
     spaceId: string | null,
     spaceName?: string
 }) {
     const titleRef = useRef<HTMLInputElement | null>(null);
     const linkRef = useRef<HTMLInputElement | null>(null);
+    const bodyRef = useRef<HTMLTextAreaElement | null>(null);
     const typeRef = useRef<HTMLSelectElement | null>(null);
     const [file, setFile] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -42,6 +43,7 @@ export function AddContentModal({
         // Reset form when closing
         if (titleRef.current) titleRef.current.value = "";
         if (linkRef.current) linkRef.current.value = "";
+        if (bodyRef.current) bodyRef.current.value = "";
         if (typeRef.current) typeRef.current.value = "youtube";
         setSelectedType("youtube");
         setFile(null);
@@ -53,6 +55,7 @@ export function AddContentModal({
         if (e.key === "Escape") {
             if (titleRef.current) titleRef.current.value = "";
             if (linkRef.current) linkRef.current.value = "";
+            if (bodyRef.current) bodyRef.current.value = "";
             if (typeRef.current) typeRef.current.value = "youtube";
             setSelectedType("youtube");
             setFile(null);
@@ -75,6 +78,7 @@ export function AddContentModal({
         setErrorMessage(null);
         const title = titleRef.current?.value?.trim();
         const link = linkRef.current?.value?.trim();
+        const body = bodyRef.current?.value?.trim();
 
         const isValidUrl = (u?: string) => {
             if (!u) return false;
@@ -93,13 +97,24 @@ export function AddContentModal({
             setErrorMessage("Upload a PDF or provide a link.");
             return false;
         }
-        if (selectedType !== "document" && !link) {
-            setErrorMessage("Please provide a link.");
-            return false;
-        }
-        if (selectedType !== "document" && link && !isValidUrl(link)) {
-            setErrorMessage("Please provide a valid URL.");
-            return false;
+        if (selectedType === "note") {
+            if (!body) {
+                setErrorMessage("Please enter note content.");
+                return false;
+            }
+            if (link && !isValidUrl(link)) {
+                setErrorMessage("Please provide a valid URL.");
+                return false;
+            }
+        } else {
+            if (!link) {
+                setErrorMessage("Please provide a link.");
+                return false;
+            }
+            if (link && !isValidUrl(link)) {
+                setErrorMessage("Please provide a valid URL.");
+                return false;
+            }
         }
         if (file && file.type !== 'application/pdf') {
             setErrorMessage("Only PDF files are allowed.");
@@ -151,7 +166,8 @@ export function AddContentModal({
         try {
             const response = await axios.post(`${BACKEND_URL}/api/v1/content`, {
                 title: titleRef.current?.value?.trim() || file?.name,
-                link: fileUrl,
+                link: fileUrl || undefined,
+                body: bodyRef.current?.value?.trim() || undefined,
                 type: selectedType,
                 spaceId
             }, {
@@ -164,6 +180,7 @@ export function AddContentModal({
             // Reset form
             if (titleRef.current) titleRef.current.value = "";
             if (linkRef.current) linkRef.current.value = "";
+            if (bodyRef.current) bodyRef.current.value = "";
             if (typeRef.current) typeRef.current.value = "youtube";
             setSelectedType("youtube");
             setFile(null);
@@ -242,8 +259,9 @@ export function AddContentModal({
 
                     <div>
                         <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Link {selectedType !== 'document' && <span className="text-red-500">*</span>}
+                            Link {(selectedType !== 'document' && selectedType !== 'note') && <span className="text-red-500">*</span>}
                             {selectedType === 'document' && <span className="text-gray-400 text-xs font-normal">(Optional)</span>}
+                            {selectedType === 'note' && <span className="text-gray-400 text-xs font-normal">(Optional)</span>}
                         </label>
                         <input
                             ref={linkRef}
@@ -256,15 +274,36 @@ export function AddContentModal({
                                     ? "https://www.youtube.com/watch?v=..."
                                     : selectedType === 'twitter'
                                     ? "https://twitter.com/username/status/..."
+                                    : selectedType === 'note'
+                                    ? "Optional: paste a related link"
                                     : "https://example.com/article"
                             }
                         />
                         <p className="text-xs text-gray-500 mt-2">
                             {selectedType === 'document' 
                                 ? 'You can upload a PDF below or provide a URL to an existing document.' 
+                                : selectedType === 'note'
+                                ? 'Optionally attach a link that this note refers to.'
                                 : `Paste a valid ${selectedType === 'youtube' ? 'YouTube' : selectedType === 'twitter' ? 'Twitter/X' : 'web'} URL.`}
                         </p>
                     </div>
+
+                    {selectedType === 'note' && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Note Body <span className="text-red-500">*</span>
+                            </label>
+                            <textarea
+                                ref={bodyRef}
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
+                                placeholder="Write your note here..."
+                                rows={5}
+                            />
+                            <p className="text-xs text-gray-500 mt-2">
+                                Capture your own thoughts, summaries, or takeaways. Notes are stored directly in BrainCache.
+                            </p>
+                        </div>
+                    )}
 
                     {selectedType === "document" && (
                         <div>

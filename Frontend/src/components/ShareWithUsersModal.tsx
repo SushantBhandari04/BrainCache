@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { CrossIcon } from "./icons";
@@ -34,8 +34,6 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
     const [sharing, setSharing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [removing, setRemoving] = useState<string | null>(null);
-    const [allowEdit, setAllowEdit] = useState(false);
-    const [updatingPermission, setUpdatingPermission] = useState<string | null>(null);
 
     const fetchSharedUsers = useCallback(async () => {
         if (!resourceId) return;
@@ -61,7 +59,6 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
             setSelectedUsers([]);
             setSearchQuery("");
             setSearchResults([]);
-            setAllowEdit(false);
         }
     }, [open, resourceId, fetchSharedUsers]);
 
@@ -106,8 +103,7 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
             await axios.post(`${BACKEND_URL}/api/v1/share/with-users`, {
                 resourceType,
                 resourceId,
-                userIds: selectedUsers.map(u => u._id),
-                permissions: allowEdit ? "read-write" : "read"
+                userIds: selectedUsers.map(u => u._id)
             }, {
                 headers: { Authorization: token }
             });
@@ -119,28 +115,6 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
             setError(e?.response?.data?.message || "Failed to share");
         } finally {
             setSharing(false);
-        }
-    }
-
-    async function handlePermissionChange(userId: string, permissions: "read" | "read-write") {
-        if (!resourceId) return;
-        setUpdatingPermission(userId);
-        setError(null);
-        try {
-            const token = localStorage.getItem("token") || "";
-            await axios.post(`${BACKEND_URL}/api/v1/share/with-users`, {
-                resourceType,
-                resourceId,
-                userIds: [userId],
-                permissions,
-            }, {
-                headers: { Authorization: token }
-            });
-            await fetchSharedUsers();
-        } catch (e: any) {
-            setError(e?.response?.data?.message || "Failed to update permissions");
-        } finally {
-            setUpdatingPermission(null);
         }
     }
 
@@ -257,18 +231,6 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                         </div>
                                     ))}
                                 </div>
-                                <div className="mt-3 flex items-center gap-2">
-                                    <input
-                                        id="allow-edit-toggle"
-                                        type="checkbox"
-                                        className="h-4 w-4 text-indigo-600 border-gray-300 rounded"
-                                        checked={allowEdit}
-                                        onChange={(e) => setAllowEdit(e.target.checked)}
-                                    />
-                                    <label htmlFor="allow-edit-toggle" className="text-sm text-gray-700 cursor-pointer">
-                                        Allow selected users to add and delete content (can edit)
-                                    </label>
-                                </div>
                                 <button
                                     onClick={handleShare}
                                     disabled={sharing}
@@ -304,23 +266,6 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                                 {getUserDisplayName(shared.userId)}
                                             </div>
                                             <div className="text-sm text-gray-500">{shared.userId.email}</div>
-                                            <div className="mt-1 flex items-center gap-2 text-xs text-gray-500">
-                                                <span>Permission:</span>
-                                                <select
-                                                    value={shared.permissions}
-                                                    onChange={(e) =>
-                                                        handlePermissionChange(
-                                                            shared.userId._id,
-                                                            e.target.value as "read" | "read-write"
-                                                        )
-                                                    }
-                                                    disabled={updatingPermission === shared.userId._id}
-                                                    className="border border-gray-300 rounded-md px-2 py-1 bg-white text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                                >
-                                                    <option value="read">Read-only</option>
-                                                    <option value="read-write">Can edit</option>
-                                                </select>
-                                            </div>
                                             <div className="text-xs text-gray-400 mt-1">
                                                 Shared {new Date(shared.sharedAt).toLocaleDateString()}
                                             </div>

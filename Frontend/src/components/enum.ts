@@ -5,6 +5,7 @@ export interface CardProps{
     title: string,
     type: Type,
     link: string,
+    body?: string,
     _id: ObjectId,
     onDelete?: (id:ObjectId)=>void,
     readOnly?: boolean

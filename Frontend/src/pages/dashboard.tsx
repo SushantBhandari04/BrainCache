@@ -16,7 +16,7 @@ declare global {
   }
 }
 
-export type Type = "youtube" | "twitter" | "document" | "link";
+export type Type = "youtube" | "twitter" | "document" | "link" | "article" | "note";
 
 type Space = {
   _id: string;
@@ -36,7 +36,7 @@ type Space = {
 function Dashboard() {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [content, setContent] = useState<{ title: string; link: string; type: Type; _id: ObjectId }[]>([]);
+  const [content, setContent] = useState<{ title: string; link: string; type: Type; _id: ObjectId; body?: string }[]>([]);
   const [profile, setProfile] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Type | "all">("all");
@@ -381,7 +381,8 @@ function Dashboard() {
   const filteredContent = useMemo(() => {
     return content.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.link.toLowerCase().includes(searchQuery.toLowerCase());
+        item.link.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.body ? item.body.toLowerCase().includes(searchQuery.toLowerCase()) : false);
       const matchesFilter = activeFilter === 'all' || item.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
@@ -392,7 +393,9 @@ function Dashboard() {
     { type: 'youtube', label: 'YouTube' },
     { type: 'twitter', label: 'Tweets' },
     { type: 'document', label: 'Documents' },
-    { type: 'link', label: 'Links' }
+    { type: 'link', label: 'Links' },
+    { type: 'article', label: 'Articles' },
+    { type: 'note', label: 'Notes' }
   ];
 
   return (
@@ -787,6 +790,7 @@ function Dashboard() {
                           onDelete={canEditSpace ? Delete : undefined}
                           title={item.title}
                           link={item.link}
+                          body={item.body}
                           type={item.type}
                           _id={item._id}
                           readOnly={!canEditSpace}

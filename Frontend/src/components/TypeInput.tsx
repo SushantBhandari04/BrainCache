@@ -7,7 +7,7 @@ export function TypeInput({
   reference: MutableRefObject<HTMLSelectElement | null>;
   onChange: (event: ChangeEvent<HTMLSelectElement>) => void; // Added prop
 }) {
-  type ContentType = "youtube" | "twitter" | "document" | "link";
+  type ContentType = "youtube" | "twitter" | "document" | "link" | "article" | "note";
   const [type, setType] = useState<ContentType>("youtube");
 
   const handleChange = (event: ChangeEvent<HTMLSelectElement>) => {
@@ -32,6 +32,8 @@ export function TypeInput({
       <option value="twitter">Twitter / X</option>
       <option value="document">Document (PDF)</option>
       <option value="link">Web Link</option>
+      <option value="article">Article</option>
+      <option value="note">Note</option>
     </select>
   );
 }

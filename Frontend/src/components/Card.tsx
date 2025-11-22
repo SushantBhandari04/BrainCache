@@ -11,10 +11,13 @@ const icon:{[key in Type]:JSX.Element} = {
     "twitter": <TwitterIcon/>,
     "document": <DocumentIcon/>,
     "link": <LinkIcon/>,
+    "article": <DocumentIcon/>,
+    "note": <DocumentIcon/>,
 }
 
 export function Card(props: CardProps) {
     const [shareModalOpen, setShareModalOpen] = useState(false);
+    const [isNoteExpanded, setIsNoteExpanded] = useState(false);
     
     return (
         <div className="group flex flex-col gap-4 border-2 border-gray-200 shadow-lg h-full w-full rounded-xl p-5 bg-white hover:shadow-xl hover:border-violet-300 transition-all duration-300">
@@ -83,6 +86,24 @@ export function Card(props: CardProps) {
                     </div>
                 )}
 
+                {props.type === "article" && (
+                    <div className="p-4 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg border border-violet-200 flex-1 flex flex-col gap-2">
+                        <a
+                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-sm w-full"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            href={props.link}
+                        >
+                            {props.link}
+                        </a>
+                        {props.body && (
+                            <p className="text-xs text-gray-600 line-clamp-3 whitespace-pre-wrap break-words">
+                                {props.body}
+                            </p>
+                        )}
+                    </div>
+                )}
+
                 {/* ✅ Fixed PDF Viewer */}
                 {props.type === "document" && (
                     <div className="w-full flex flex-col gap-3 flex-1 min-h-0">
@@ -101,6 +122,48 @@ export function Card(props: CardProps) {
                             <DocumentIcon />
                             <span>Open PDF in new tab</span>
                         </a>
+                    </div>
+                )}
+
+                {props.type === "note" && (
+                    <div className="w-full flex flex-col gap-3 flex-1 min-h-0">
+                        <div className="flex-1 min-h-0">
+                            {props.body ? (
+                                <>
+                                    <p
+                                        className={`text-sm text-gray-700 whitespace-pre-wrap break-words ${
+                                            isNoteExpanded ? "" : "line-clamp-5"
+                                        }`}
+                                    >
+                                        {props.body}
+                                    </p>
+                                    {props.body.length > 220 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsNoteExpanded(!isNoteExpanded)}
+                                            className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                                        >
+                                            {isNoteExpanded ? "Show less" : "Show more"}
+                                        </button>
+                                    )}
+                                </>
+                            ) : (
+                                <p className="text-sm text-gray-400 italic">
+                                    No content
+                                </p>
+                            )}
+                        </div>
+                        {props.link && (
+                            <a
+                                href={props.link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-violet-600 hover:text-violet-700 font-medium text-sm inline-flex items-center gap-2 hover:underline"
+                            >
+                                <LinkIcon />
+                                <span>Open related link</span>
+                            </a>
+                        )}
                     </div>
                 )}
             </div>
