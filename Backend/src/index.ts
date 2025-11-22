@@ -497,7 +497,8 @@ app.get("/api/v1/spaces", UserMiddleware, async (req: Request, res: Response) =>
                     shareHash: null,
                     isShared: true,
                     sharedBy: access?.ownerId || null,
-                    sharedAt: access?.createdAt || null
+                    sharedAt: access?.createdAt || null,
+                    permissions: access?.permissions || 'read'
                 };
             });
         }
@@ -615,7 +616,6 @@ app.post("/api/v1/spaces/:spaceId/share", UserMiddleware, async (req: Request, r
     res.status(200).json(response);
 });
 
-
 app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
     const user = req.user;
 
@@ -634,9 +634,26 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
     const { link, type, title, spaceId } = parsed.data;
 
     try{
-        const space = await SpaceModel.findOne({ _id: spaceId, userId: user._id });
+        const space = await SpaceModel.findById(spaceId);
         if(!space){
             res.status(404).json({ message: "Space not found" });
+            return;
+        }
+
+        // Determine if the user can add content to this space
+        let canEdit = space.userId.toString() === user._id.toString();
+        if (!canEdit) {
+            const shareAccess = await ShareAccessModel.findOne({
+                resourceType: 'space',
+                resourceId: space._id,
+                sharedWithId: user._id,
+                permissions: 'read-write'
+            });
+            canEdit = !!shareAccess;
+        }
+
+        if (!canEdit) {
+            res.status(403).json({ message: "You do not have permission to add content to this space." });
             return;
         }
 
@@ -647,8 +664,7 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
             userId: user._id,
             spaceId: space._id
         })
-    
-    
+
         res.status(200).json({
             message: "Content added successfully.",
             content: newContent
@@ -664,7 +680,6 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
     
    
 })
-
 
 app.get("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
     const user = req.user;
@@ -727,26 +742,62 @@ app.get("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
     })
 })
 
-
-app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)=>{
+app.delete("/api/v1/content", UserMiddleware, async (req: Request, res: Response) => {
     const user = req.user;
-    const userId = user._id;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
     const contentId = req.body.id;
-
-    const content = await ContentModel.find({userId, _id:contentId});
-
-    if(!content){
-        res.status(403).json({
-            message: "No content present."
-        })
+    if (!contentId) {
+        res.status(400).json({ message: "Content id is required" });
+        return;
     }
-    else{
-        await ContentModel.deleteMany({userId, _id:contentId});
-        res.status(200).json({
-            message: "Content deleted successfully."
-        })
+
+    const content = await ContentModel.findById(contentId);
+    if (!content) {
+        res.status(404).json({ message: "No content present." });
+        return;
     }
+
+    let canDelete = false;
+
+    // Content owner can delete
+    if (content.userId && content.userId.toString() === user._id.toString()) {
+        canDelete = true;
+    }
+
+    // Space owner can delete any content in their space
+    if (!canDelete && content.spaceId) {
+        const space = await SpaceModel.findById(content.spaceId);
+        if (space && space.userId.toString() === user._id.toString()) {
+            canDelete = true;
+        }
+    }
+
+    // Users with read-write access to the space can delete content
+    if (!canDelete && content.spaceId) {
+        const shareAccess = await ShareAccessModel.findOne({
+            resourceType: 'space',
+            resourceId: content.spaceId,
+            sharedWithId: user._id,
+            permissions: 'read-write'
+        });
+        if (shareAccess) {
+            canDelete = true;
+        }
+    }
+
+    if (!canDelete) {
+        res.status(403).json({ message: "You do not have permission to delete this content." });
+        return;
+    }
+
+    await ContentModel.deleteOne({ _id: contentId });
+    res.status(200).json({ message: "Content deleted successfully." });
 })
+
 app.post("/api/v1/brain/share", UserMiddleware, async (req,res)=>{
     const user = req.user;
     if(!user){
@@ -1096,10 +1147,9 @@ app.get("/api/v1/users/search", UserMiddleware, async (req: Request, res: Respon
     }
 });
 
-// Share space/content with users
 app.post("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: Response) => {
     try {
-        const { resourceType, resourceId, userIds } = req.body;
+        const { resourceType, resourceId, userIds, permissions } = req.body;
         const ownerId = req.user._id;
 
         if (!['space', 'content'].includes(resourceType)) {
@@ -1109,6 +1159,11 @@ app.post("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: R
 
         if (!Array.isArray(userIds) || userIds.length === 0) {
             res.status(400).json({ message: "User IDs array required" });
+            return;
+        }
+
+        if (permissions && permissions !== "read" && permissions !== "read-write") {
+            res.status(400).json({ message: "Invalid permissions value" });
             return;
         }
 
@@ -1135,14 +1190,16 @@ app.post("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: R
         }
 
         // Create share access records
+        const permissionValue = permissions === "read-write" ? "read-write" : "read";
         const shareAccesses = [];
         for (const userId of userIds) {
             try {
                 const shareAccess = await ShareAccessModel.findOneAndUpdate(
                     { resourceType, resourceId, sharedWithId: userId },
-                    { ownerId, permissions: 'read' },
+                    { ownerId, permissions: permissionValue },
                     { upsert: true, new: true }
                 );
+
                 shareAccesses.push(shareAccess);
             } catch (error: any) {
                 // Ignore duplicate key errors
@@ -1272,7 +1329,8 @@ app.get("/api/v1/shared-with-me", UserMiddleware, async (req: Request, res: Resp
                     result.spaces.push({
                         ...space.toObject(),
                         sharedBy: access.ownerId,
-                        sharedAt: access.createdAt
+                        sharedAt: access.createdAt,
+                        permissions: access.permissions || 'read'
                     });
                 }
             } else {

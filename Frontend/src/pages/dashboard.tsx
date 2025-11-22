@@ -30,6 +30,7 @@ type Space = {
     lastName?: string;
   };
   isShared?: boolean;
+  permissions?: "read" | "read-write";
 };
 
 function Dashboard() {
@@ -70,6 +71,12 @@ function Dashboard() {
   
   const isSharedSpace = useMemo(() => {
     return selectedSpace?.isShared || false;
+  }, [selectedSpace]);
+
+  const canEditSpace = useMemo(() => {
+    if (!selectedSpace) return false;
+    if (!selectedSpace.isShared) return true;
+    return selectedSpace.permissions === "read-write";
   }, [selectedSpace]);
 
   async function getContent(spaceId?: string | null) {
@@ -431,7 +438,7 @@ function Dashboard() {
             title="Add Content"
             startIcon={<PlusIcon />}
             onClick={() => setOpen(true)}
-            disabled={!selectedSpaceId || isSharedSpace}
+            disabled={!selectedSpaceId || !canEditSpace}
           />
           <Button
             variant="secondary"
@@ -777,12 +784,12 @@ function Dashboard() {
                         className={`transform transition-all duration-300 hover:-translate-y-1 ${colSpanClasses} ${rowSpanClasses}`}
                       >
                         <Card
-                          onDelete={isSharedSpace ? undefined : Delete}
+                          onDelete={canEditSpace ? Delete : undefined}
                           title={item.title}
                           link={item.link}
                           type={item.type}
                           _id={item._id}
-                          readOnly={isSharedSpace}
+                          readOnly={!canEditSpace}
                         />
                       </div>
                     );
@@ -818,6 +825,7 @@ function Dashboard() {
                       title="Add Content"
                       startIcon={<PlusIcon />}
                       onClick={() => setOpen(true)}
+                      disabled={!canEditSpace}
                     />
                   )}
                 </div>
