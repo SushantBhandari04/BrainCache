@@ -753,45 +753,23 @@ function Dashboard() {
           ) : (
             <>
               {filteredContent.length > 0 ? (
-                <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 auto-rows-[minmax(140px,auto)]">
-                  {filteredContent.map((item, index) => {
-                    let colSpanClasses = "";
-                    let rowSpanClasses = "row-span-1";
-
-                    if (item.type === "youtube") {
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                      rowSpanClasses = "row-span-2";
-                    } else if (item.type === "twitter") {
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2";
-                      rowSpanClasses = "row-span-1";
-                    } else if (item.type === "document") {
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                      rowSpanClasses = "row-span-2";
-                    } else if (item.type === "link") {
-                      colSpanClasses = "col-span-1";
-                      rowSpanClasses = "row-span-1";
-                    } else {
-                      colSpanClasses = "col-span-1";
-                      rowSpanClasses = "row-span-1";
-                    }
-
-                    return (
-                      <div
-                        key={index}
-                        className={`transform transition-all duration-300 hover:-translate-y-1 ${colSpanClasses} ${rowSpanClasses}`}
-                      >
-                        <Card
-                          onDelete={canEditSpace ? Delete : undefined}
-                          title={item.title}
-                          link={item.link}
-                          body={item.body}
-                          type={item.type}
-                          _id={item._id}
-                          readOnly={!canEditSpace}
-                        />
-                      </div>
-                    );
-                  })}
+                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-4 gap-4 md:gap-6">
+                  {filteredContent.map((item, index) => (
+                    <div
+                      key={index}
+                      className="mb-4 break-inside-avoid transform transition-all duration-300 hover:-translate-y-1"
+                    >
+                      <Card
+                        onDelete={canEditSpace ? Delete : undefined}
+                        title={item.title}
+                        link={item.link}
+                        body={item.body}
+                        type={item.type}
+                        _id={item._id}
+                        readOnly={!canEditSpace}
+                      />
+                    </div>
+                  ))}
                 </div>
               ) : (
                 <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">

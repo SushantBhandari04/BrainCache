@@ -18,8 +18,13 @@ const EmbedTweet: React.FC<EmbedTweetProps> = ({ tweetLink }) => {
 
   return (
     <div className="w-full flex justify-center">
-      <div className="w-full max-w-[550px]">
-        <TwitterTweetEmbed tweetId={tweetId} />
+      <div className="w-full">
+        <TwitterTweetEmbed
+          tweetId={tweetId}
+          options={{
+            conversation: "none",
+          }}
+        />
       </div>
     </div>
   );
