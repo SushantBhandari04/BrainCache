@@ -143,10 +143,13 @@ function Dashboard() {
     try {
       const token = localStorage.getItem("token") || "";
       const res = await axios.get(`${BACKEND_URL}/api/v1/spaces`, {
+        params: { includeShared: "true" },
         headers: { Authorization: token },
       });
       const fetchedSpaces: Space[] = res.data.spaces || [];
+      const fetchedSharedSpaces: Space[] = res.data.sharedSpaces || [];
       setSpaces(fetchedSpaces);
+      setSharedSpaces(fetchedSharedSpaces);
       setPlan(res.data.plan || "free");
       setSpaceLimit(res.data.limit || 3);
       setSpaceCount(res.data.currentCount || fetchedSpaces.length);
@@ -156,9 +159,10 @@ function Dashboard() {
       }
       setPaymentsConfigured(!!res.data.paymentsConfigured);
       const preferredSpaceId = initialSpaceQueryRef.current;
-      if (preferredSpaceId && fetchedSpaces.some((s) => s._id === preferredSpaceId)) {
+      const allSpaces = [...fetchedSpaces, ...fetchedSharedSpaces];
+      if (preferredSpaceId && allSpaces.some((s) => s._id === preferredSpaceId)) {
         setSelectedSpaceId(preferredSpaceId);
-      } else if (selectedSpaceId && fetchedSpaces.some((s) => s._id === selectedSpaceId)) {
+      } else if (selectedSpaceId && allSpaces.some((s) => s._id === selectedSpaceId)) {
         // keep current selection
       } else if (fetchedSpaces.length) {
         setSelectedSpaceId(fetchedSpaces[0]._id);
@@ -629,8 +633,13 @@ function Dashboard() {
               ) : (
                 sharedSpaces.length > 0 ? (
                   sharedSpaces.map((space) => {
-                    const ownerName = space.sharedBy 
-                      ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
+                    const ownerLabel = space.sharedBy 
+                      ? (() => {
+                          const fullName = `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim();
+                          const email = space.sharedBy.email;
+                          if (fullName && email) return `${fullName} (${email})`;
+                          return email || fullName || "Unknown";
+                        })()
                       : "Unknown";
                     return (
                       <button
@@ -646,7 +655,7 @@ function Dashboard() {
                           {space.description && (
                             <div className="text-xs text-gray-500 truncate">{space.description}</div>
                           )}
-                          <div className="text-xs text-indigo-600 mt-1">by {ownerName}</div>
+                          <div className="text-xs text-indigo-600 mt-1">by {ownerLabel}</div>
                         </div>
                         <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
                           Shared
@@ -684,11 +693,16 @@ function Dashboard() {
                   : "bg-violet-100 text-violet-700 border-violet-200"
                 }`}>
                   <span className="text-sm font-semibold">{selectedSpace.name}</span>
-                  {isSharedSpace && selectedSpace.sharedBy && (
-                    <span className="text-xs ml-2 opacity-75">
-                      by {selectedSpace.sharedBy.firstName || selectedSpace.sharedBy.email}
-                    </span>
-                  )}
+                  {isSharedSpace && selectedSpace.sharedBy && (() => {
+                    const fullName = `${selectedSpace.sharedBy.firstName || ""} ${selectedSpace.sharedBy.lastName || ""}`.trim();
+                    const email = selectedSpace.sharedBy.email;
+                    const label = fullName && email ? `${fullName} (${email})` : (email || fullName);
+                    return label ? (
+                      <span className="text-xs ml-2 opacity-75">
+                        by {label}
+                      </span>
+                    ) : null;
+                  })()}
                 </div>
               )}
             </div>

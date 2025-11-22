@@ -551,8 +551,13 @@ function SpacesPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                             {sharedSpaces.map((space) => {
-                                const ownerName = space.sharedBy 
-                                    ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
+                                const ownerLabel = space.sharedBy 
+                                    ? (() => {
+                                        const fullName = `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim();
+                                        const email = space.sharedBy.email;
+                                        if (fullName && email) return `${fullName} (${email})`;
+                                        return email || fullName || "Unknown";
+                                    })()
                                     : "Unknown";
                                 return (
                                     <div 
@@ -573,7 +578,7 @@ function SpacesPage() {
                                             ) : (
                                                 <p className="text-xs md:text-sm text-gray-400 italic mb-2">No description</p>
                                             )}
-                                            <p className="text-xs text-indigo-600 mb-4">by {ownerName}</p>
+                                            <p className="text-xs text-indigo-600 mb-4">by {ownerLabel}</p>
                                         </div>
                                         <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                                             <Button 
