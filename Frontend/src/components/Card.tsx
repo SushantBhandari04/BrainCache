@@ -20,31 +20,31 @@ export function Card(props: CardProps) {
     const [isNoteExpanded, setIsNoteExpanded] = useState(false);
     
     return (
-        <div className="group flex flex-col gap-4 border-2 border-gray-200 shadow-lg h-full w-full rounded-xl p-5 bg-white hover:shadow-xl hover:border-violet-300 transition-all duration-300">
+        <div className="group flex flex-col gap-3 border-2 border-gray-200 shadow-md h-full w-full rounded-lg p-3 md:p-4 bg-white hover:shadow-lg hover:border-violet-300 transition-all duration-300">
             {/* Header with Icon and Actions */}
             <div className="flex justify-between items-start w-full">
-                <div className="flex items-start gap-3 flex-1 min-w-0">
+                <div className="flex items-start gap-2 flex-1 min-w-0">
                     <div className="flex-shrink-0 mt-0.5">
                         {icon[props.type]}
                     </div>
-                    <h3 className="font-semibold text-gray-900 break-words line-clamp-2 group-hover:text-violet-600 transition-colors">
+                    <h3 className="font-semibold text-sm md:text-base text-gray-900 break-words line-clamp-2 group-hover:text-violet-600 transition-colors">
                         {props.title}
                     </h3>
                 </div>
                 {!props.readOnly && (
-                    <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
                         <button 
                             onClick={(e) => {
                                 e.stopPropagation();
                                 setShareModalOpen(true);
                             }}
-                            className="text-gray-500 hover:text-violet-600 transition-colors p-1.5 rounded-lg hover:bg-violet-50"
+                            className="text-gray-500 hover:text-violet-600 transition-colors p-1 rounded-md hover:bg-violet-50"
                             title="Share this content"
                         >
                             <ShareIcon size={4} color={"gray-600"} />
                         </button>
                         {props.onDelete && (
-                            <div className="p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                            <div className="p-1 rounded-md hover:bg-red-50 transition-colors">
                                 <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
                             </div>
                         )}
@@ -74,9 +74,9 @@ export function Card(props: CardProps) {
                 )}
                 
                 {props.type === "link" && (
-                    <div className="p-4 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg border border-violet-200 flex-1 flex items-center">
+                    <div className="p-3 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-md border border-violet-200 flex-1 flex items-center">
                         <a
-                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-sm w-full"
+                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-xs md:text-sm w-full"
                             target="_blank"
                             rel="noopener noreferrer"
                             href={props.link}
@@ -87,9 +87,9 @@ export function Card(props: CardProps) {
                 )}
 
                 {props.type === "article" && (
-                    <div className="p-4 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-lg border border-violet-200 flex-1 flex flex-col gap-2">
+                    <div className="p-3 bg-gradient-to-br from-violet-50 to-indigo-50 rounded-md border border-violet-200 flex-1 flex flex-col gap-2">
                         <a
-                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-sm w-full"
+                            className="text-violet-600 break-words block hover:text-violet-700 hover:underline font-medium text-xs md:text-sm w-full"
                             target="_blank"
                             rel="noopener noreferrer"
                             href={props.link}
@@ -106,49 +106,49 @@ export function Card(props: CardProps) {
 
                 {/* ✅ Fixed PDF Viewer */}
                 {props.type === "document" && (
-                    <div className="w-full flex flex-col gap-3 flex-1 min-h-0">
+                    <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
                         <div className="flex-1 min-h-0">
                             <iframe
                                 src={props.link}
-                                className="w-full h-full min-h-[300px] border-2 border-gray-200 rounded-lg shadow-sm"
+                                className="w-full h-full min-h-[200px] md:min-h-[250px] border border-gray-200 rounded-md shadow-sm"
                             />
                         </div>
                         <a
                             href={props.link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-violet-600 hover:text-violet-700 font-medium text-sm inline-flex items-center gap-2 hover:underline"
+                            className="text-violet-600 hover:text-violet-700 font-medium text-xs md:text-sm inline-flex items-center gap-1.5 hover:underline"
                         >
                             <DocumentIcon />
-                            <span>Open PDF in new tab</span>
+                            <span>Open PDF</span>
                         </a>
                     </div>
                 )}
 
                 {props.type === "note" && (
-                    <div className="w-full flex flex-col gap-3 flex-1 min-h-0">
+                    <div className="w-full flex flex-col gap-2 flex-1 min-h-0">
                         <div className="flex-1 min-h-0">
                             {props.body ? (
                                 <>
                                     <p
-                                        className={`text-sm text-gray-700 whitespace-pre-wrap break-words ${
-                                            isNoteExpanded ? "" : "line-clamp-5"
+                                        className={`text-xs md:text-sm text-gray-700 whitespace-pre-wrap break-words ${
+                                            isNoteExpanded ? "" : "line-clamp-4"
                                         }`}
                                     >
                                         {props.body}
                                     </p>
-                                    {props.body.length > 220 && (
+                                    {props.body.length > 180 && (
                                         <button
                                             type="button"
                                             onClick={() => setIsNoteExpanded(!isNoteExpanded)}
-                                            className="mt-2 text-xs font-medium text-indigo-600 hover:text-indigo-700"
+                                            className="mt-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700"
                                         >
                                             {isNoteExpanded ? "Show less" : "Show more"}
                                         </button>
                                     )}
                                 </>
                             ) : (
-                                <p className="text-sm text-gray-400 italic">
+                                <p className="text-xs md:text-sm text-gray-400 italic">
                                     No content
                                 </p>
                             )}
@@ -158,10 +158,10 @@ export function Card(props: CardProps) {
                                 href={props.link}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-violet-600 hover:text-violet-700 font-medium text-sm inline-flex items-center gap-2 hover:underline"
+                                className="text-violet-600 hover:text-violet-700 font-medium text-xs md:text-sm inline-flex items-center gap-1.5 hover:underline"
                             >
                                 <LinkIcon />
-                                <span>Open related link</span>
+                                <span>Open link</span>
                             </a>
                         )}
                     </div>

@@ -34,6 +34,8 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
     const [sharing, setSharing] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [removing, setRemoving] = useState<string | null>(null);
+    const [defaultPermission, setDefaultPermission] = useState<"read" | "read-write">("read");
+    const [updatingPermissions, setUpdatingPermissions] = useState<string | null>(null);
 
     const fetchSharedUsers = useCallback(async () => {
         if (!resourceId) return;
@@ -103,7 +105,8 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
             await axios.post(`${BACKEND_URL}/api/v1/share/with-users`, {
                 resourceType,
                 resourceId,
-                userIds: selectedUsers.map(u => u._id)
+                userIds: selectedUsers.map(u => u._id),
+                permissions: defaultPermission
             }, {
                 headers: { Authorization: token }
             });
@@ -115,6 +118,28 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
             setError(e?.response?.data?.message || "Failed to share");
         } finally {
             setSharing(false);
+        }
+    }
+
+    async function handleUpdatePermissions(userId: string, newPermissions: "read" | "read-write") {
+        if (!resourceId) return;
+        setUpdatingPermissions(userId);
+        setError(null);
+        try {
+            const token = localStorage.getItem("token") || "";
+            await axios.patch(`${BACKEND_URL}/api/v1/share/with-users`, {
+                resourceType,
+                resourceId,
+                userId,
+                permissions: newPermissions
+            }, {
+                headers: { Authorization: token }
+            });
+            await fetchSharedUsers();
+        } catch (e: any) {
+            setError(e?.response?.data?.message || "Failed to update permissions");
+        } finally {
+            setUpdatingPermissions(null);
         }
     }
 
@@ -193,6 +218,45 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                             )}
                         </div>
 
+                        {/* Default Permission Selector */}
+                        {selectedUsers.length > 0 && (
+                            <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                    Default Access Level
+                                </label>
+                                <div className="flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="defaultPermission"
+                                            value="read"
+                                            checked={defaultPermission === "read"}
+                                            onChange={(e) => setDefaultPermission(e.target.value as "read" | "read-write")}
+                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900">Read Only</span>
+                                            <p className="text-xs text-gray-500">Can view content but cannot edit</p>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="defaultPermission"
+                                            value="read-write"
+                                            checked={defaultPermission === "read-write"}
+                                            onChange={(e) => setDefaultPermission(e.target.value as "read" | "read-write")}
+                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500"
+                                        />
+                                        <div>
+                                            <span className="text-sm font-medium text-gray-900">Edit Access</span>
+                                            <p className="text-xs text-gray-500">Can view and edit content</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Search Results */}
                         {searchResults.length > 0 && (
                             <div className="mt-2 border border-gray-200 rounded-lg bg-white shadow-lg max-h-48 overflow-y-auto">
@@ -270,13 +334,30 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                                 Shared {new Date(shared.sharedAt).toLocaleDateString()}
                                             </div>
                                         </div>
-                                        <button
-                                            onClick={() => handleRemoveShare(shared.userId._id)}
-                                            disabled={removing === shared.userId._id}
-                                            className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
-                                        >
-                                            {removing === shared.userId._id ? "Removing..." : "Remove"}
-                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            {/* Permission Selector */}
+                                            <div className="flex items-center gap-2">
+                                                <select
+                                                    value={shared.permissions}
+                                                    onChange={(e) => handleUpdatePermissions(shared.userId._id, e.target.value as "read" | "read-write")}
+                                                    disabled={updatingPermissions === shared.userId._id}
+                                                    className="text-xs px-2 py-1 border border-gray-300 rounded-md bg-white text-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="read">Read Only</option>
+                                                    <option value="read-write">Edit Access</option>
+                                                </select>
+                                                {updatingPermissions === shared.userId._id && (
+                                                    <div className="w-4 h-4 border-2 border-indigo-200 border-t-indigo-600 rounded-full animate-spin"></div>
+                                                )}
+                                            </div>
+                                            <button
+                                                onClick={() => handleRemoveShare(shared.userId._id)}
+                                                disabled={removing === shared.userId._id}
+                                                className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                            >
+                                                {removing === shared.userId._id ? "Removing..." : "Remove"}
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
                             </div>

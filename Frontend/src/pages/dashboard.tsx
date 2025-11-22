@@ -401,24 +401,24 @@ function Dashboard() {
   return (
     <div className="h-screen w-screen font-sans flex flex-col bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
       {/* Top Bar */}
-      <div className="sticky top-0 z-20 flex justify-between items-center w-full h-fit py-4 bg-white/80 backdrop-blur-md px-6 border-b border-gray-200/50 shadow-sm">
+      <div className="sticky top-0 z-20 flex justify-between items-center w-full h-fit py-3 md:py-4 bg-white/80 backdrop-blur-md px-4 md:px-6 border-b border-gray-200/50 shadow-sm">
         <Logo />
-        <div className="flex-1 max-w-2xl mx-8">
+        <div className="flex-1 max-w-2xl mx-4 md:mx-8">
           <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <SearchIcon className="h-5 w-5 text-gray-400" />
+            <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+              <SearchIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
             </div>
             <input
               type="text"
-              className="block w-full pl-12 pr-4 py-2.5 border-2 border-gray-200 rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-sm shadow-sm"
+              className="block w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-2.5 border-2 border-gray-200 rounded-lg md:rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-xs md:text-sm shadow-sm"
               placeholder="Search content by title or link..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex flex-col text-xs pr-4 border-r border-gray-200">
+        <div className="flex items-center gap-2 md:gap-3">
+          <div className="hidden md:flex flex-col text-xs pr-3 md:pr-4 border-r border-gray-200">
             <span className={`font-semibold ${plan === "pro" ? "text-violet-600" : "text-gray-800"}`}>
               {plan === "pro" ? "✨ Pro" : "Free Plan"}
             </span>
@@ -463,7 +463,7 @@ function Dashboard() {
             )}`}
             alt="Profile"
             title="Profile"
-            className="w-10 h-10 rounded-full cursor-pointer border-2 border-gray-200 hover:border-violet-400 transition-colors shadow-sm"
+            className="w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer border-2 border-gray-200 hover:border-violet-400 transition-colors shadow-sm"
             onClick={() => navigate("/user/profile")}
           />
           <Button
@@ -478,9 +478,9 @@ function Dashboard() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar */}
-        <div className="w-80 bg-white/60 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto shadow-sm">
-          <div className="p-5">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">Content Types</h2>
+        <div className="w-72 md:w-80 bg-white/60 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto shadow-sm">
+          <div className="p-4 md:p-5">
+            <h2 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Content Types</h2>
             <nav className="space-y-2">
               {contentTypes.map((item) => {
                 const count = item.type === 'all'
@@ -490,13 +490,13 @@ function Dashboard() {
                   <button
                     key={item.type}
                     onClick={() => setActiveFilter(item.type)}
-                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${activeFilter === item.type
+                    className={`w-full flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-lg transition-all ${activeFilter === item.type
                         ? 'bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-700 border-l-4 border-violet-500 shadow-sm'
                         : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'
                       }`}
                   >
                     <span className="truncate">{item.label}</span>
-                    <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${activeFilter === item.type
+                    <span className={`ml-auto inline-block py-0.5 px-2 text-xs rounded-full font-semibold ${activeFilter === item.type
                         ? 'bg-violet-100 text-violet-700'
                         : 'bg-gray-100 text-gray-600'
                       }`}>
@@ -508,9 +508,9 @@ function Dashboard() {
             </nav>
           </div>
 
-          <div className="p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-gray-900">Spaces</h2>
+          <div className="p-4 md:p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
+            <div className="flex items-center justify-between mb-3 md:mb-4">
+              <h2 className="text-lg md:text-xl font-bold text-gray-900">Spaces</h2>
               {spaceTab === "my" && (
                 <button
                   className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
@@ -532,10 +532,10 @@ function Dashboard() {
             </div>
 
             {/* Tabs */}
-            <div className="mb-4 flex gap-2 border-b border-gray-200">
+            <div className="mb-3 md:mb-4 flex gap-2 border-b border-gray-200">
               <button
                 onClick={() => setSpaceTab("my")}
-                className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${
                   spaceTab === "my"
                     ? "border-violet-600 text-violet-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -545,7 +545,7 @@ function Dashboard() {
               </button>
               <button
                 onClick={() => setSpaceTab("shared")}
-                className={`flex-1 px-3 py-2 text-sm font-medium border-b-2 transition-colors ${
+                className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${
                   spaceTab === "shared"
                     ? "border-violet-600 text-violet-600"
                     : "border-transparent text-gray-500 hover:text-gray-700"
@@ -616,7 +616,7 @@ function Dashboard() {
                     <button
                       key={space._id}
                       onClick={() => handleSpaceSelect(space._id)}
-                      className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
+                      className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
                           ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
                           : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
                         }`}
@@ -624,11 +624,11 @@ function Dashboard() {
                       <div className="flex-1 text-left min-w-0">
                         <div className="font-semibold truncate mb-0.5">{space.name}</div>
                         {space.description && (
-                          <div className="text-xs text-gray-500 truncate">{space.description}</div>
+                          <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
                         )}
                       </div>
                       {space.shareHash && (
-                        <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-2 py-0.5 rounded-full font-semibold border border-green-200">
+                        <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-green-200">
                           Public
                         </span>
                       )}
@@ -655,7 +655,7 @@ function Dashboard() {
                       <button
                         key={space._id}
                         onClick={() => handleSpaceSelect(space._id)}
-                        className={`w-full flex items-start gap-3 px-4 py-3 text-sm rounded-xl border-2 transition-all ${selectedSpaceId === space._id
+                        className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
                             ? "border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-900 shadow-md"
                             : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
                           }`}
@@ -663,11 +663,11 @@ function Dashboard() {
                         <div className="flex-1 text-left min-w-0">
                           <div className="font-semibold truncate mb-0.5">{space.name}</div>
                           {space.description && (
-                            <div className="text-xs text-gray-500 truncate">{space.description}</div>
+                            <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
                           )}
-                          <div className="text-xs text-indigo-600 mt-1">by {ownerLabel}</div>
+                          <div className="text-[10px] md:text-xs text-indigo-600 mt-1">by {ownerLabel}</div>
                         </div>
-                        <span className="flex-shrink-0 text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
+                        <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
                           Shared
                         </span>
                       </button>
@@ -686,29 +686,29 @@ function Dashboard() {
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-8 bg-gradient-to-br from-gray-50/50 to-white">
-          <div className="mb-6">
+        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-gray-50/50 to-white">
+          <div className="mb-4">
             <div className="flex items-center justify-between mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
                 {activeFilter === 'all' ? 'All Content' : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}
                 {searchQuery && (
-                  <span className="text-xl font-normal text-gray-500 ml-2">
+                  <span className="text-lg md:text-xl font-normal text-gray-500 ml-2">
                     matching "{searchQuery}"
                   </span>
                 )}
               </h1>
               {selectedSpace && (
-                <div className={`px-4 py-2 rounded-lg border ${isSharedSpace 
+                <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md md:rounded-lg border ${isSharedSpace 
                   ? "bg-indigo-100 text-indigo-700 border-indigo-200" 
                   : "bg-violet-100 text-violet-700 border-violet-200"
                 }`}>
-                  <span className="text-sm font-semibold">{selectedSpace.name}</span>
+                  <span className="text-xs md:text-sm font-semibold">{selectedSpace.name}</span>
                   {isSharedSpace && selectedSpace.sharedBy && (() => {
                     const fullName = `${selectedSpace.sharedBy.firstName || ""} ${selectedSpace.sharedBy.lastName || ""}`.trim();
                     const email = selectedSpace.sharedBy.email;
                     const label = fullName && email ? `${fullName} (${email})` : (email || fullName);
                     return label ? (
-                      <span className="text-xs ml-2 opacity-75">
+                      <span className="text-[10px] md:text-xs ml-2 opacity-75">
                         by {label}
                       </span>
                     ) : null;
@@ -716,7 +716,7 @@ function Dashboard() {
                 </div>
               )}
             </div>
-            <p className="text-sm text-gray-600 flex items-center gap-2">
+            <p className="text-xs md:text-sm text-gray-600 flex items-center gap-2">
               <span className="font-medium">{filteredContent.length}</span>
               <span>{filteredContent.length === 1 ? 'item' : 'items'} found</span>
               {searchQuery && (
@@ -734,12 +734,12 @@ function Dashboard() {
           </div>
 
           {!selectedSpaceId ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300">
-              <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
-                <span className="text-4xl">📁</span>
+            <div className="flex flex-col items-center justify-center py-12 md:py-16 text-center bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
+              <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-xl md:rounded-2xl flex items-center justify-center">
+                <span className="text-3xl md:text-4xl">📁</span>
               </div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Space Selected</h3>
-              <p className="text-gray-600 mb-6 max-w-md">
+              <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">No Space Selected</h3>
+              <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 max-w-md px-4">
                 Select a space from the sidebar or create a new one to start adding content.
               </p>
               <Button
@@ -753,31 +753,31 @@ function Dashboard() {
           ) : (
             <>
               {filteredContent.length > 0 ? (
-                <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-4 auto-rows-[minmax(180px,auto)]">
+                <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 auto-rows-[minmax(140px,auto)]">
                   {filteredContent.map((item, index) => {
                     // Determine grid span classes based on content type and screen size
                     let colSpanClasses = "";
                     let rowSpanClasses = "row-span-1";
 
                     if (item.type === "youtube") {
-                      // YouTube: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      // YouTube: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 3 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
                       rowSpanClasses = "row-span-2"; // Taller for video aspect ratio
                     } else if (item.type === "twitter") {
-                      // Twitter: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      // Twitter: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 2 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2";
                       rowSpanClasses = "row-span-1";
                     } else if (item.type === "document") {
-                      // Document: full width on mobile, 2 cols on tablet, 2 cols on lg, 3 cols on xl, 4 cols on 2xl
-                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-3 2xl:col-span-4";
+                      // Document: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 3 cols on 2xl
+                      colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
                       rowSpanClasses = "row-span-2"; // Taller for PDF viewer
                     } else if (item.type === "link") {
-                      // Link: full width on mobile, 1 col on tablet, 1 col on lg, 2 cols on xl, 2 cols on 2xl
-                      colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2";
+                      // Link: 1 col across all breakpoints
+                      colSpanClasses = "col-span-1";
                       rowSpanClasses = "row-span-1";
                     } else {
-                      // Default fallback
-                      colSpanClasses = "col-span-1 sm:col-span-1 lg:col-span-1 xl:col-span-2 2xl:col-span-2";
+                      // Default fallback: 1 col across all breakpoints
+                      colSpanClasses = "col-span-1";
                       rowSpanClasses = "row-span-1";
                     }
 
@@ -800,22 +800,22 @@ function Dashboard() {
                   })}
                 </div>
               ) : (
-                <div className="col-span-full flex flex-col items-center justify-center py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300">
-                  <div className="w-20 h-20 mx-auto mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">
+                  <div className="w-16 h-16 md:w-20 md:h-20 mx-auto mb-3 md:mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl md:rounded-2xl flex items-center justify-center">
                     {searchQuery ? (
-                      <SearchIcon className="h-10 w-10 text-gray-400" />
+                      <SearchIcon className="h-8 w-8 md:h-10 md:w-10 text-gray-400" />
                     ) : (
-                      <span className="text-4xl">📄</span>
+                      <span className="text-3xl md:text-4xl">📄</span>
                     )}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  <h3 className="text-lg md:text-xl font-semibold text-gray-900 mb-2">
                     {searchQuery
                       ? 'No matches found'
                       : activeFilter === 'all'
                         ? 'No content yet'
                         : `No ${activeFilter} content`}
                   </h3>
-                  <p className="text-gray-600 mb-6 max-w-md">
+                  <p className="text-sm md:text-base text-gray-600 mb-4 md:mb-6 max-w-md px-4">
                     {searchQuery
                       ? `No content matches "${searchQuery}". Try a different search term.`
                       : activeFilter === 'all'
