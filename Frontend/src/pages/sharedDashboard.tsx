@@ -419,7 +419,7 @@ export function SharedDashboard() {
                                             body={item.body}
                                             type={item.type}
                                             readOnly={!canEdit}
-                                            onDelete={canEdit ? handleDelete : undefined}
+                                            onDelete={canEdit ? (id) => handleDelete(id.toString()) : undefined}
                                         />
                                     </div>
                                 ))}

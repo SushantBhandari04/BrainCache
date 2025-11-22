@@ -7,6 +7,6 @@ export interface CardProps{
     link: string,
     body?: string,
     _id: ObjectId,
-    onDelete?: (id:ObjectId)=>void,
+    onDelete?: (id:ObjectId)=>Promise<void>,
     readOnly?: boolean
 }
