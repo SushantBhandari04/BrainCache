@@ -1,5 +1,5 @@
 import express, {Request, Response} from "express"
-import { ContentModel, LinkModel, SpaceModel, UserModel, ShareAccessModel } from "./db";
+import { ContentModel, LinkModel, SpaceModel, UserModel, ShareAccessModel, SpaceCommentModel } from "./db";
 import {z} from "zod";
 import path from "path";
 import { Types } from "mongoose";
@@ -84,6 +84,15 @@ const CreateContentSchema = z.object({
     return !!data.link;
 }, {
     message: "Link is required for this content type, or body is required for notes"
+});
+
+const CreateCommentSchema = z.object({
+    comment: z.string().min(1).max(2000),
+    spaceId: objectIdSchema
+});
+
+const UpdateCommentSchema = z.object({
+    comment: z.string().min(1).max(2000)
 });
 
 const ShareToggleSchema = z.object({
@@ -1435,6 +1444,239 @@ app.get("/api/v1/shared-with-me", UserMiddleware, async (req: Request, res: Resp
     } catch (error) {
         console.error("Error fetching shared resources:", error);
         res.status(500).json({ message: "Error fetching shared resources" });
+    }
+});
+
+// Space Comments/Feedback API Endpoints
+
+// Create a comment on a space
+app.post("/api/v1/spaces/:spaceId/comments", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { spaceId } = req.params;
+        const userId = req.user._id;
+        
+        const idParsed = objectIdSchema.safeParse(spaceId);
+        if (!idParsed.success) {
+            res.status(400).json({ message: "Invalid space identifier" });
+            return;
+        }
+
+        const bodyParsed = CreateCommentSchema.safeParse({ ...req.body, spaceId });
+        if (!bodyParsed.success) {
+            res.status(400).json({ message: "Invalid comment. Comment must be between 1 and 2000 characters." });
+            return;
+        }
+
+        // Check if user has access to the space (owner or shared with)
+        const space = await SpaceModel.findById(spaceId);
+        if (!space) {
+            res.status(404).json({ message: "Space not found" });
+            return;
+        }
+
+        const isOwner = space.userId.toString() === userId.toString();
+        const hasAccess = await ShareAccessModel.findOne({
+            resourceType: 'space',
+            resourceId: spaceId,
+            sharedWithId: userId
+        });
+
+        if (!isOwner && !hasAccess) {
+            res.status(403).json({ message: "You don't have access to this space" });
+            return;
+        }
+
+        const comment = await SpaceCommentModel.create({
+            spaceId,
+            userId,
+            comment: bodyParsed.data.comment
+        });
+
+        const populatedComment = await SpaceCommentModel.findById(comment._id).populate({
+            path: 'userId',
+            select: 'email firstName lastName'
+        });
+
+        res.status(201).json({
+            message: "Comment added successfully",
+            comment: populatedComment
+        });
+    } catch (error) {
+        console.error("Error creating comment:", error);
+        res.status(500).json({ message: "Error creating comment" });
+    }
+});
+
+// Get all comments for a space
+app.get("/api/v1/spaces/:spaceId/comments", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { spaceId } = req.params;
+        const userId = req.user._id;
+        
+        const idParsed = objectIdSchema.safeParse(spaceId);
+        if (!idParsed.success) {
+            res.status(400).json({ message: "Invalid space identifier" });
+            return;
+        }
+
+        // Check if user has access to the space
+        const space = await SpaceModel.findById(spaceId);
+        if (!space) {
+            res.status(404).json({ message: "Space not found" });
+            return;
+        }
+
+        const isOwner = space.userId.toString() === userId.toString();
+        const hasAccess = await ShareAccessModel.findOne({
+            resourceType: 'space',
+            resourceId: spaceId,
+            sharedWithId: userId
+        });
+
+        if (!isOwner && !hasAccess) {
+            res.status(403).json({ message: "You don't have access to this space" });
+            return;
+        }
+
+        const comments = await SpaceCommentModel.find({ spaceId })
+            .populate({
+                path: 'userId',
+                select: 'email firstName lastName'
+            })
+            .sort({ createdAt: -1 });
+
+        const spaceOwnerId = space.userId.toString();
+        const currentUserId = userId.toString();
+
+        res.status(200).json({
+            comments: comments.map(c => {
+                // Handle both populated and non-populated userId
+                const userIdObj = c.userId as any;
+                let commentUserId: string;
+                if (userIdObj && typeof userIdObj === 'object' && userIdObj._id) {
+                    commentUserId = userIdObj._id.toString();
+                } else if (userIdObj && typeof userIdObj.toString === 'function') {
+                    commentUserId = userIdObj.toString();
+                } else {
+                    commentUserId = String(userIdObj);
+                }
+                
+                const commentAuthorIsSpaceOwner = commentUserId === spaceOwnerId;
+                const currentUserIsCommentAuthor = commentUserId === currentUserId;
+                
+                return {
+                    _id: c._id,
+                    comment: c.comment,
+                    edited: c.edited,
+                    createdAt: c.createdAt,
+                    updatedAt: c.updatedAt,
+                    userId: c.userId,
+                    isOwner: currentUserIsCommentAuthor,
+                    spaceOwner: commentAuthorIsSpaceOwner
+                };
+            })
+        });
+    } catch (error) {
+        console.error("Error fetching comments:", error);
+        res.status(500).json({ message: "Error fetching comments" });
+    }
+});
+
+// Update a comment
+app.patch("/api/v1/spaces/:spaceId/comments/:commentId", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { spaceId, commentId } = req.params;
+        const userId = req.user._id;
+        
+        const spaceIdParsed = objectIdSchema.safeParse(spaceId);
+        const commentIdParsed = objectIdSchema.safeParse(commentId);
+        if (!spaceIdParsed.success || !commentIdParsed.success) {
+            res.status(400).json({ message: "Invalid identifier" });
+            return;
+        }
+
+        const bodyParsed = UpdateCommentSchema.safeParse(req.body);
+        if (!bodyParsed.success) {
+            res.status(400).json({ message: "Invalid comment. Comment must be between 1 and 2000 characters." });
+            return;
+        }
+
+        const comment = await SpaceCommentModel.findById(commentId);
+        if (!comment) {
+            res.status(404).json({ message: "Comment not found" });
+            return;
+        }
+
+        if (comment.spaceId.toString() !== spaceId) {
+            res.status(400).json({ message: "Comment does not belong to this space" });
+            return;
+        }
+
+        // Only the comment author can edit
+        if (comment.userId.toString() !== userId.toString()) {
+            res.status(403).json({ message: "You can only edit your own comments" });
+            return;
+        }
+
+        comment.comment = bodyParsed.data.comment;
+        comment.edited = true;
+        await comment.save();
+
+        const populatedComment = await SpaceCommentModel.findById(comment._id).populate({
+            path: 'userId',
+            select: 'email firstName lastName'
+        });
+
+        res.status(200).json({
+            message: "Comment updated successfully",
+            comment: populatedComment
+        });
+    } catch (error) {
+        console.error("Error updating comment:", error);
+        res.status(500).json({ message: "Error updating comment" });
+    }
+});
+
+// Delete a comment
+app.delete("/api/v1/spaces/:spaceId/comments/:commentId", UserMiddleware, async (req: Request, res: Response) => {
+    try {
+        const { spaceId, commentId } = req.params;
+        const userId = req.user._id;
+        
+        const spaceIdParsed = objectIdSchema.safeParse(spaceId);
+        const commentIdParsed = objectIdSchema.safeParse(commentId);
+        if (!spaceIdParsed.success || !commentIdParsed.success) {
+            res.status(400).json({ message: "Invalid identifier" });
+            return;
+        }
+
+        const comment = await SpaceCommentModel.findById(commentId);
+        if (!comment) {
+            res.status(404).json({ message: "Comment not found" });
+            return;
+        }
+
+        if (comment.spaceId.toString() !== spaceId) {
+            res.status(400).json({ message: "Comment does not belong to this space" });
+            return;
+        }
+
+        // Check if user is comment author or space owner
+        const space = await SpaceModel.findById(spaceId);
+        const isCommentAuthor = comment.userId.toString() === userId.toString();
+        const isSpaceOwner = space && space.userId.toString() === userId.toString();
+
+        if (!isCommentAuthor && !isSpaceOwner) {
+            res.status(403).json({ message: "You can only delete your own comments or be the space owner" });
+            return;
+        }
+
+        await SpaceCommentModel.deleteOne({ _id: commentId });
+
+        res.status(200).json({ message: "Comment deleted successfully" });
+    } catch (error) {
+        console.error("Error deleting comment:", error);
+        res.status(500).json({ message: "Error deleting comment" });
     }
 });
 

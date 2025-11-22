@@ -455,7 +455,7 @@ function Dashboard() {
             title="Share"
             startIcon={<ShareIcon size={4} color="blue-600" />}
             onClick={() => setShareOpen(true)}
-            disabled={!selectedSpaceId || isSharedSpace}
+            disabled={!selectedSpaceId}
           />
           <img
             src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
@@ -755,28 +755,22 @@ function Dashboard() {
               {filteredContent.length > 0 ? (
                 <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 auto-rows-[minmax(140px,auto)]">
                   {filteredContent.map((item, index) => {
-                    // Determine grid span classes based on content type and screen size
                     let colSpanClasses = "";
                     let rowSpanClasses = "row-span-1";
 
                     if (item.type === "youtube") {
-                      // YouTube: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 3 cols on 2xl
                       colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                      rowSpanClasses = "row-span-2"; // Taller for video aspect ratio
+                      rowSpanClasses = "row-span-2";
                     } else if (item.type === "twitter") {
-                      // Twitter: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 2 cols on 2xl
                       colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2";
                       rowSpanClasses = "row-span-1";
                     } else if (item.type === "document") {
-                      // Document: full width on mobile, 2 cols on tablet, 2 cols on lg, 2 cols on xl, 3 cols on 2xl
                       colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                      rowSpanClasses = "row-span-2"; // Taller for PDF viewer
+                      rowSpanClasses = "row-span-2";
                     } else if (item.type === "link") {
-                      // Link: 1 col across all breakpoints
                       colSpanClasses = "col-span-1";
                       rowSpanClasses = "row-span-1";
                     } else {
-                      // Default fallback: 1 col across all breakpoints
                       colSpanClasses = "col-span-1";
                       rowSpanClasses = "row-span-1";
                     }
@@ -841,7 +835,14 @@ function Dashboard() {
 
       {/* Add Content Modal */}
       {open && <AddContentModal setOpen={setOpen} setContent={setContent} spaceId={selectedSpaceId} spaceName={selectedSpace?.name} />}
-      <ShareModal open={shareOpen} onClose={() => setShareOpen(false)} spaceId={selectedSpaceId} spaceName={selectedSpace?.name} onShareChange={handleShareChange} />
+      <ShareModal 
+        open={shareOpen} 
+        onClose={() => setShareOpen(false)} 
+        spaceId={selectedSpaceId} 
+        spaceName={selectedSpace?.name} 
+        onShareChange={handleShareChange}
+        isSpaceOwner={!selectedSpace?.isShared || false}
+      />
     </div>
   );
 }

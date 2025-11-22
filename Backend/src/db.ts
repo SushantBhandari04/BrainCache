@@ -85,9 +85,22 @@ const ShareAccessSchema = new Schema({
 // Compound index to prevent duplicate shares
 ShareAccessSchema.index({ resourceType: 1, resourceId: 1, sharedWithId: 1 }, { unique: true });
 
+const SpaceCommentSchema = new Schema({
+    spaceId: {type: ObjectId, ref: 'Spaces', required: true},
+    userId: {type: ObjectId, ref: 'Users', required: true},
+    comment: {type: String, required: true, maxlength: 2000},
+    edited: {type: Boolean, default: false}
+}, {
+    timestamps: true
+});
+
+// Index for faster queries
+SpaceCommentSchema.index({ spaceId: 1, createdAt: -1 });
+
 export const UserModel = model("Users",UserSchema);
 export const ContentModel = model("Contents",ContentSchema);
 export const TagsModel = model("Tags",TagsSchema);
 export const SpaceModel = model("Spaces",SpaceSchema);
 export const LinkModel = model("Links",LinkSchema);
 export const ShareAccessModel = model("ShareAccess", ShareAccessSchema);
+export const SpaceCommentModel = model("SpaceComments", SpaceCommentSchema);

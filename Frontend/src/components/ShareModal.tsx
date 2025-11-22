@@ -3,6 +3,7 @@ import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { CrossIcon } from "./icons";
 import { ShareWithUsersModal } from "./ShareWithUsersModal";
+import { SpaceComments } from "./SpaceComments";
 
 const WhatsappBadge = () => (
     <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-500/10 text-green-600">
@@ -50,22 +51,60 @@ type ShareModalProps = {
     spaceId: string | null;
     spaceName?: string;
     onShareChange?: (spaceId: string, hash: string | null) => void;
+    isSpaceOwner?: boolean;
 };
 
-export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }: ShareModalProps) {
+export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange, isSpaceOwner: propIsSpaceOwner }: ShareModalProps) {
     const [isShared, setIsShared] = useState<boolean | null>(null);
     const [currentHash, setCurrentHash] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"link" | "users">("link");
+    const [activeTab, setActiveTab] = useState<"link" | "users" | "comments">("link");
     const [userShareModalOpen, setUserShareModalOpen] = useState(false);
+    const [isSpaceOwner, setIsSpaceOwner] = useState(propIsSpaceOwner ?? true);
     const shareLink = useMemo(() => currentHash ? `${window.location.origin}/share/${currentHash}` : "", [currentHash]);
     const shareTitle = useMemo(() => spaceName ? `Check out my "${spaceName}" BrainCache space` : "Check out my BrainCache space", [spaceName]);
     const canUseNativeShare = typeof window !== "undefined" && typeof (navigator as Navigator & { share?: Navigator["share"] | undefined }).share === "function";
 
-    async function fetchShareState() {
+    // Fetch space ownership status and set default tab
+    useEffect(() => {
+        if (open && spaceId) {
+            checkSpaceOwnership();
+        }
+    }, [open, spaceId]);
+
+    // Set default tab when ownership status changes
+    useEffect(() => {
+        if (open && !isSpaceOwner && activeTab === "link") {
+            setActiveTab("comments");
+        }
+    }, [open, isSpaceOwner]);
+
+    async function checkSpaceOwnership() {
         if (!spaceId) return;
+        try {
+            const token = localStorage.getItem("token") || "";
+            const res = await axios.get(`${BACKEND_URL}/api/v1/spaces`, {
+                params: { includeShared: "true" },
+                headers: { Authorization: token }
+            });
+            const allSpaces = [...(res.data.spaces || []), ...(res.data.sharedSpaces || [])];
+            const space = allSpaces.find((s: any) => s._id === spaceId);
+            const ownerStatus = space && !space.isShared;
+            setIsSpaceOwner(ownerStatus);
+            // If user is not owner, default to comments tab
+            if (!ownerStatus) {
+                setActiveTab("comments");
+            }
+        } catch (e) {
+            // Default to true if check fails
+            setIsSpaceOwner(propIsSpaceOwner ?? true);
+        }
+    }
+
+    async function fetchShareState() {
+        if (!spaceId || !isSpaceOwner) return;
         setLoading(true);
         setError(null);
         try {
@@ -84,14 +123,25 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
     }
 
     useEffect(() => {
-        if (open && spaceId) {
+        if (open && spaceId && isSpaceOwner) {
             fetchShareState();
-        } else if (open && !spaceId) {
+        } else if (open && spaceId && !isSpaceOwner) {
+            // User has access to the space but is not the owner
+            // Clear any previous share state or errors from owner views
             setIsShared(null);
             setCurrentHash(null);
+            setError(null);
+        } else if (open && !spaceId) {
+            // No space selected while modal is open
+            setIsShared(null);
+            setCurrentHash(null);
+            setError(null);
+        } else if (!open) {
+            // When closing the modal, reset share-specific error
+            setError(null);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, spaceId]);
+    }, [open, spaceId, isSpaceOwner]);
 
     async function updateSharing(share: boolean) {
         if (!spaceId) return;
@@ -159,16 +209,18 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
 
     return (
         <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
+            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <div>
                         <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Share</p>
-                        <h2 className="text-2xl font-semibold text-gray-900 mt-1">Invite others to this space</h2>
+                        <h2 className="text-2xl font-semibold text-gray-900 mt-1">
+                            {isSpaceOwner ? "Invite others to this space" : "Comments & feedback for this space"}
+                        </h2>
                     </div>
                     <CrossIcon onClick={onClose} />
                 </div>
 
-                <div className="p-6">
+                <div className="p-6 overflow-y-auto flex-1">
                     {spaceId ? (
                         <>
                             <div className="mb-6 flex flex-col gap-2">
@@ -176,43 +228,71 @@ export function ShareModal({ open, onClose, spaceId, spaceName, onShareChange }:
                                 <div className="flex items-start justify-between">
                                     <div>
                                         <h3 className="text-xl font-semibold text-gray-900">{spaceName || "Untitled space"}</h3>
-                                        <p className="text-gray-500 text-sm">Invite teammates, collaborators or friends to view this space.</p>
+                                        <p className="text-gray-500 text-sm">
+                                            {isSpaceOwner
+                                                ? "Invite teammates, collaborators or friends to view this space."
+                                                : "You can view this space and share comments with the space owner."}
+                                        </p>
                                     </div>
-                                    {isShared ? (
-                                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700 bg-green-100 rounded-full">Live</span>
-                                    ) : (
-                                        <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500 bg-gray-100 rounded-full">Offline</span>
+                                    {isSpaceOwner && (
+                                        isShared ? (
+                                            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700 bg-green-100 rounded-full">Live</span>
+                                        ) : (
+                                            <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-gray-500 bg-gray-100 rounded-full">Offline</span>
+                                        )
                                     )}
                                 </div>
                             </div>
 
                             {/* Tabs */}
                             <div className="mb-6 flex gap-2 border-b border-gray-200">
+                                {isSpaceOwner && (
+                                    <button
+                                        onClick={() => setActiveTab("link")}
+                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                            activeTab === "link"
+                                                ? "border-indigo-600 text-indigo-600"
+                                                : "border-transparent text-gray-500 hover:text-gray-700"
+                                        }`}
+                                    >
+                                        Public Link
+                                    </button>
+                                )}
+                                {isSpaceOwner && (
+                                    <button
+                                        onClick={() => setActiveTab("users")}
+                                        className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                                            activeTab === "users"
+                                                ? "border-indigo-600 text-indigo-600"
+                                                : "border-transparent text-gray-500 hover:text-gray-700"
+                                        }`}
+                                    >
+                                        Share with Users
+                                    </button>
+                                )}
                                 <button
-                                    onClick={() => setActiveTab("link")}
+                                    onClick={() => setActiveTab("comments")}
                                     className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                                        activeTab === "link"
+                                        activeTab === "comments"
                                             ? "border-indigo-600 text-indigo-600"
                                             : "border-transparent text-gray-500 hover:text-gray-700"
                                     }`}
                                 >
-                                    Public Link
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab("users")}
-                                    className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                                        activeTab === "users"
-                                            ? "border-indigo-600 text-indigo-600"
-                                            : "border-transparent text-gray-500 hover:text-gray-700"
-                                    }`}
-                                >
-                                    Share with Users
+                                    Comments & Feedback
                                 </button>
                             </div>
 
-                            {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">{error}</div>}
+                            {error && isSpaceOwner && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">{error}</div>}
 
-                            {activeTab === "users" ? (
+                            {activeTab === "comments" ? (
+                                <div className="min-h-[400px] max-h-[500px] overflow-y-auto flex flex-col">
+                                    <SpaceComments 
+                                        spaceId={spaceId} 
+                                        spaceName={spaceName}
+                                        isSpaceOwner={isSpaceOwner}
+                                    />
+                                </div>
+                            ) : activeTab === "users" ? (
                                 <div className="text-center py-8">
                                     <div className="w-16 h-16 mx-auto mb-4 bg-indigo-100 rounded-full flex items-center justify-center">
                                         <svg className="w-8 h-8 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">

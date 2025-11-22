@@ -77,7 +77,6 @@ export function AddContentModal({
     function validate(): boolean {
         setErrorMessage(null);
         const title = titleRef.current?.value?.trim();
-        const link = linkRef.current?.value?.trim();
         const body = bodyRef.current?.value?.trim();
 
         const isValidUrl = (u?: string) => {
@@ -93,20 +92,18 @@ export function AddContentModal({
             setErrorMessage("Please enter a title.");
             return false;
         }
-        if (selectedType === "document" && !file && !link) {
-            setErrorMessage("Upload a PDF or provide a link.");
-            return false;
-        }
-        if (selectedType === "note") {
+        if (selectedType === "document") {
+            if (!file) {
+                setErrorMessage("Please upload a PDF.");
+                return false;
+            }
+        } else if (selectedType === "note") {
             if (!body) {
                 setErrorMessage("Please enter note content.");
                 return false;
             }
-            if (link && !isValidUrl(link)) {
-                setErrorMessage("Please provide a valid URL.");
-                return false;
-            }
         } else {
+            const link = linkRef.current?.value?.trim();
             if (!link) {
                 setErrorMessage("Please provide a link.");
                 return false;
@@ -136,60 +133,63 @@ export function AddContentModal({
             return;
         }
 
-        let fileUrl = linkRef.current?.value?.trim() || "";
-
         setSubmitting(true);
-        if (selectedType === "document" && file) {
-            const formData = new FormData();
-            formData.append("pdf", file);
-
-            setUploading(true);
-            try {
-                const uploadRes = await axios.post(`${BACKEND_URL}/api/v1/upload`, formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: localStorage.getItem("token"),
-                    },
-                });
-
-                fileUrl = uploadRes.data.url; // ✅ Use backend response URL
-            } catch (error) {
-                console.error("Upload failed", error);
-                setErrorMessage("Failed to upload PDF. Please try again.");
-                setUploading(false);
-                return;
-            }
-            setUploading(false);
-        }
-
-        // Save Content (PDF or Link)
         try {
-            const linkValue = fileUrl || (selectedType === "note" ? linkRef.current?.value?.trim() || undefined : linkRef.current?.value?.trim() || undefined);
-            const bodyValue = selectedType === "note" ? bodyRef.current?.value?.trim() || undefined : undefined;
-            
+            let linkValue: string | undefined;
+            let bodyValue: string | undefined;
+
+            if (selectedType === "document") {
+                if (!file) {
+                    setErrorMessage("Please upload a PDF.");
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append("pdf", file);
+
+                setUploading(true);
+                try {
+                    const uploadRes = await axios.post(`${BACKEND_URL}/api/v1/upload`, formData, {
+                        headers: {
+                            "Content-Type": "multipart/form-data",
+                            Authorization: localStorage.getItem("token") || "",
+                        },
+                    });
+                    linkValue = uploadRes.data.url;
+                } catch (error) {
+                    console.error("Upload failed", error);
+                    setErrorMessage("Failed to upload PDF. Please try again.");
+                    return;
+                } finally {
+                    setUploading(false);
+                }
+            } else if (selectedType === "note") {
+                bodyValue = bodyRef.current?.value?.trim() || undefined;
+            } else {
+                linkValue = linkRef.current?.value?.trim() || undefined;
+            }
+
             const payload: any = {
                 title: titleRef.current?.value?.trim() || file?.name,
                 type: selectedType,
                 spaceId
             };
-            
-            // Only include link if it has a value
+
             if (linkValue) {
                 payload.link = linkValue;
             }
-            
-            // Only include body if it has a value (for notes)
             if (bodyValue) {
                 payload.body = bodyValue;
             }
-            
+
             const response = await axios.post(`${BACKEND_URL}/api/v1/content`, payload, {
                 headers: {
-                    Authorization: localStorage.getItem("token")
-                }
+                    Authorization: localStorage.getItem("token") || "",
+                },
             });
 
             setContent(prev => [...prev, response.data.content]);
+
             // Reset form
             if (titleRef.current) titleRef.current.value = "";
             if (linkRef.current) linkRef.current.value = "";
@@ -202,8 +202,9 @@ export function AddContentModal({
         } catch (error) {
             console.error("Error saving content", error);
             setErrorMessage("Failed to save content. Please try again.");
+        } finally {
+            setSubmitting(false);
         }
-        setSubmitting(false);
     }
 
     return (
@@ -270,36 +271,28 @@ export function AddContentModal({
                         </p>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                            Link {(selectedType !== 'document' && selectedType !== 'note') && <span className="text-red-500">*</span>}
-                            {selectedType === 'document' && <span className="text-gray-400 text-xs font-normal">(Optional)</span>}
-                            {selectedType === 'note' && <span className="text-gray-400 text-xs font-normal">(Optional)</span>}
-                        </label>
-                        <input
-                            ref={linkRef}
-                            type="text"
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
-                            placeholder={
-                                selectedType === 'document' 
-                                    ? "Optional: paste a document URL" 
-                                    : selectedType === 'youtube'
-                                    ? "https://www.youtube.com/watch?v=..."
-                                    : selectedType === 'twitter'
-                                    ? "https://twitter.com/username/status/..."
-                                    : selectedType === 'note'
-                                    ? "Optional: paste a related link"
-                                    : "https://example.com/article"
-                            }
-                        />
-                        <p className="text-xs text-gray-500 mt-2">
-                            {selectedType === 'document' 
-                                ? 'You can upload a PDF below or provide a URL to an existing document.' 
-                                : selectedType === 'note'
-                                ? 'Optionally attach a link that this note refers to.'
-                                : `Paste a valid ${selectedType === 'youtube' ? 'YouTube' : selectedType === 'twitter' ? 'Twitter/X' : 'web'} URL.`}
-                        </p>
-                    </div>
+                    {selectedType !== "document" && selectedType !== "note" && (
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Link <span className="text-red-500">*</span>
+                            </label>
+                            <input
+                                ref={linkRef}
+                                type="text"
+                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                                placeholder={
+                                    selectedType === 'youtube'
+                                        ? "https://www.youtube.com/watch?v=..."
+                                        : selectedType === 'twitter'
+                                        ? "https://twitter.com/username/status/..."
+                                        : "https://example.com/article"
+                                }
+                            />
+                            <p className="text-xs text-gray-500 mt-2">
+                                {`Paste a valid ${selectedType === 'youtube' ? 'YouTube' : selectedType === 'twitter' ? 'Twitter/X' : 'web'} URL.`}
+                            </p>
+                        </div>
+                    )}
 
                     {selectedType === 'note' && (
                         <div>
