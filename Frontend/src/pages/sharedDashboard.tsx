@@ -14,6 +14,7 @@ export function SharedDashboard() {
         link: string;
         type: Type;
         _id: string;
+        body?: string;
         userId?: {
             email?: string;
             firstName?: string;
@@ -31,13 +32,20 @@ export function SharedDashboard() {
     const [isLoading, setIsLoading] = useState(true);
     const [isSingleItem, setIsSingleItem] = useState(false);
     const [ownerName, setOwnerName] = useState<string | null>(null);
+    const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
     const [canEdit, setCanEdit] = useState(false);
     const [spaceId, setSpaceId] = useState<string | null>(null);
+    
 
     const resolveOwnerName = (item?: ContentItem) => {
         if (!item?.userId) return null;
         const fullName = `${item.userId.firstName || ""} ${item.userId.lastName || ""}`.trim();
         if (fullName) return fullName;
+        return item.userId.email || null;
+    };
+
+    const resolveOwnerEmail = (item?: ContentItem) => {
+        if (!item?.userId) return null;
         return item.userId.email || null;
     };
 
@@ -58,8 +66,11 @@ export function SharedDashboard() {
 
     const filteredContent = useMemo(() => {
         return content.filter((item) => {
-            const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                               item.link.toLowerCase().includes(searchQuery.toLowerCase());
+            const query = searchQuery.toLowerCase();
+            const matchesSearch =
+                item.title.toLowerCase().includes(query) ||
+                item.link.toLowerCase().includes(query) ||
+                (item.body ? item.body.toLowerCase().includes(query) : false);
             const matchesFilter = activeFilter === "all" || item.type === activeFilter;
             return matchesSearch && matchesFilter;
         });
@@ -94,16 +105,21 @@ export function SharedDashboard() {
                     setContent(data.contents);
                     setIsSingleItem(true);
                     const owner = resolveOwnerName(data.contents[0]);
+                    const ownerEmail = resolveOwnerEmail(data.contents[0]);
+                    
                     if (owner) {
                         setOwnerName(owner);
+                        setOwnerEmail(ownerEmail);
                     }
                 } else {
                     // For full brain share
                     setContent(data.contents || []);
                     setIsSingleItem(false);
                     const owner = resolveOwnerName(data.contents?.[0]);
+                    const ownerEmail = resolveOwnerEmail(data.contents?.[0]);
                     if (owner) {
                         setOwnerName(owner);
+                        setOwnerEmail(ownerEmail);
                     }
                 }
 
@@ -240,10 +256,10 @@ export function SharedDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+        <div className=" bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
             {/* Header */}
             <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+                <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                         <div className="flex items-center gap-4">
                             <Logo />
@@ -255,6 +271,7 @@ export function SharedDashboard() {
                                 {ownerName && (
                                     <p className="text-sm text-gray-500">
                                         Shared by <span className="font-medium text-gray-700">{ownerName}</span>
+                                        {ownerEmail && <span className="text-gray-800 text-xs"> ( {ownerEmail} )</span>}
                                     </p>
                                 )}
                             </div>
@@ -277,7 +294,7 @@ export function SharedDashboard() {
                 </div>
             </div>
 
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
+            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 overflow-x-hidden">
                 {/* Search Bar */}
                 <div className="mb-6">
                     <div className="relative max-w-2xl">
@@ -319,34 +336,46 @@ export function SharedDashboard() {
                                     }`}
                                 >
                                     <span>All Content</span>
-                                    <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
-                                        activeFilter === "all"
-                                            ? 'bg-indigo-100 text-indigo-700'
-                                            : 'bg-gray-100 text-gray-600'
-                                    }`}>
+                                    <span
+                                        className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                            activeFilter === "all"
+                                                ? "bg-indigo-100 text-indigo-700"
+                                                : "bg-gray-100 text-gray-600"
+                                        }`}
+                                    >
                                         {content.length}
                                     </span>
                                 </button>
-                                {["youtube", "twitter", "document", "link"].map((type) => {
+
+                                {[
+                                    { type: "youtube" as Type, label: "YouTube" },
+                                    { type: "twitter" as Type, label: "Tweets" },
+                                    { type: "document" as Type, label: "Documents" },
+                                    { type: "link" as Type, label: "Links" },
+                                    { type: "article" as Type, label: "Articles" },
+                                    { type: "note" as Type, label: "Notes" },
+                                ].map(({ type, label }) => {
                                     const count = content.filter((item) => item.type === type).length;
                                     if (isSingleItem && count === 0) return null;
-                                    
+
                                     return (
                                         <button
                                             key={type}
-                                            onClick={() => setActiveFilter(type as Type)}
+                                            onClick={() => setActiveFilter(type)}
                                             className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
                                                 activeFilter === type
                                                     ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-l-4 border-indigo-500 shadow-sm"
                                                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent"
                                             }`}
                                         >
-                                            <span>{type.charAt(0).toUpperCase() + type.slice(1)}</span>
-                                            <span className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
-                                                activeFilter === type
-                                                    ? 'bg-indigo-100 text-indigo-700'
-                                                    : 'bg-gray-100 text-gray-600'
-                                            }`}>
+                                            <span>{label}</span>
+                                            <span
+                                                className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                                    activeFilter === type
+                                                        ? "bg-indigo-100 text-indigo-700"
+                                                        : "bg-gray-100 text-gray-600"
+                                                }`}
+                                            >
                                                 {count}
                                             </span>
                                         </button>
@@ -357,7 +386,7 @@ export function SharedDashboard() {
                     </div>
 
                     {/* Main content */}
-                    <div className="flex-1">
+                    <div className="w-4/5">
                         <div className="mb-5 flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-gray-600 flex items-center gap-2">
@@ -376,46 +405,24 @@ export function SharedDashboard() {
                         </div>
 
                         {filteredContent.length > 0 ? (
-                            <div className="bento-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 md:gap-4 auto-rows-[minmax(140px,auto)]">
-                                {filteredContent.map((item, index) => {
-                                    // Determine grid span classes based on content type
-                                    let colSpanClasses = "";
-                                    let rowSpanClasses = "row-span-1";
-
-                                    if (item.type === "youtube") {
-                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                                        rowSpanClasses = "row-span-2";
-                                    } else if (item.type === "twitter") {
-                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-2";
-                                        rowSpanClasses = "row-span-1";
-                                    } else if (item.type === "document") {
-                                        colSpanClasses = "col-span-1 sm:col-span-2 lg:col-span-2 xl:col-span-2 2xl:col-span-3";
-                                        rowSpanClasses = "row-span-2";
-                                    } else if (item.type === "link") {
-                                        colSpanClasses = "col-span-1";
-                                        rowSpanClasses = "row-span-1";
-                                    } else {
-                                        colSpanClasses = "col-span-1";
-                                        rowSpanClasses = "row-span-1";
-                                    }
-
-                                    return (
-                                        <div
-                                            key={item._id}
-                                            className={`transform transition-all duration-300 hover:-translate-y-2 hover:shadow-xl ${colSpanClasses} ${rowSpanClasses} animate-in fade-in slide-in-from-bottom-4`}
-                                            style={{ animationDelay: `${index * 50}ms` }}
-                                        >
-                                            <Card
-                                                _id={item._id as any}
-                                                title={item.title}
-                                                link={item.link}
-                                                type={item.type}
-                                                readOnly={!canEdit}
-                                                onDelete={canEdit ? handleDelete : undefined}
-                                            />
-                                        </div>
-                                    );
-                                })}
+                            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-4 gap-4 md:gap-6">
+                                {filteredContent.map((item, index) => (
+                                    <div
+                                        key={item._id}
+                                        className="mb-4 break-inside-avoid transform transition-all duration-300 hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-4"
+                                        style={{ animationDelay: `${index * 50}ms` }}
+                                    >
+                                        <Card
+                                            _id={item._id as any}
+                                            title={item.title}
+                                            link={item.link}
+                                            body={item.body}
+                                            type={item.type}
+                                            readOnly={!canEdit}
+                                            onDelete={canEdit ? handleDelete : undefined}
+                                        />
+                                    </div>
+                                ))}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center justify-center py-16 md:py-20 text-center bg-white rounded-2xl border-2 border-dashed border-gray-300 animate-in fade-in">

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+import { createPortal } from "react-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
 import { CrossIcon } from "./icons";
@@ -160,7 +161,7 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
 
   if (!open) return null;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-4">
       <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
@@ -314,4 +315,8 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
       />
     </div>
   );
+
+  return typeof document !== "undefined"
+    ? createPortal(modalContent, document.body)
+    : modalContent;
 }

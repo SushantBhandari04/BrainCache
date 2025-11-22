@@ -48,17 +48,20 @@ export function Card(props: CardProps) {
                                 <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
                             </div>
                         )}
+                    {/* Share Item Modal */}
+                    <ShareItemModal
+                        open={shareModalOpen}
+                        onClose={() => setShareModalOpen(false)}
+                        itemId={props._id.toString()}
+                        itemTitle={props.title}
+                    />
+
                     </div>
+                    
                 )}
             </div>
             
-            {/* Share Item Modal */}
-            <ShareItemModal
-                open={shareModalOpen}
-                onClose={() => setShareModalOpen(false)}
-                itemId={props._id.toString()}
-                itemTitle={props.title}
-            />
+            
 
             {/* Content Section */}
             <div className="w-full flex-1 flex flex-col min-h-0">
