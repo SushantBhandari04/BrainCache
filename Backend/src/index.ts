@@ -19,7 +19,7 @@ app.use(cors());
 
 const DEFAULT_SPACE_NAME = "My Brain";
 const FREE_SPACE_LIMIT = 3;
-const PRO_SPACE_LIMIT = 100;
+const PRO_SPACE_LIMIT = 10;
 const PRO_PLAN_PRICE_PAISE = (PRO_PLAN_PRICE_INR || 499) * 100;
 const PRO_PLAN_CURRENCY = "INR";
 const razorpay = (RAZORPAY_KEY_ID && RAZORPAY_KEY_SECRET) ? new Razorpay({
@@ -555,8 +555,12 @@ app.post("/api/v1/spaces", UserMiddleware, async (req: Request, res: Response) =
         }
         const spaceCount = await SpaceModel.countDocuments({ userId: user._id });
         const allowed = getSpaceLimit(user.subscriptionPlan);
-        if(user.subscriptionPlan !== "pro" && spaceCount >= allowed){
-            res.status(402).json({ message: "Free plan allows only 3 spaces. Upgrade your subscription to add more.", limit: allowed });
+        if(spaceCount >= allowed){
+            if (user.subscriptionPlan === "pro") {
+                res.status(402).json({ message: `Pro plan allows only ${allowed} spaces.`, limit: allowed });
+            } else {
+                res.status(402).json({ message: `Free plan allows only ${allowed} spaces. Upgrade your subscription to add more.`, limit: allowed });
+            }
             return;
         }
         const parsed = CreateSpaceSchema.safeParse(req.body);

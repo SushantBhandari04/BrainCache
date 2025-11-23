@@ -136,7 +136,7 @@ function Dashboard() {
     setSearchParams(params, { replace });
   }
 
-  const limitReached = plan !== "pro" && spaceCount >= spaceLimit;
+  const limitReached = spaceCount >= spaceLimit;
   const upgradeButtonLabel = upgrading
     ? "Processing..."
     : plan === "free"
@@ -189,7 +189,11 @@ function Dashboard() {
   async function handleCreateSpace() {
     if (!newSpaceName.trim()) return;
     if (limitReached) {
-      setSpaceError("You've reached the free-plan space limit. Upgrade to add more.");
+      if (plan === "pro") {
+        setSpaceError("You've reached the space limit for your Pro plan.");
+      } else {
+        setSpaceError("You've reached the space limit for the free plan. Upgrade to Pro to create more.");
+      }
       return;
     }
     setCreatingSpace(true);
@@ -327,7 +331,7 @@ function Dashboard() {
         amount: checkout.data.amount,
         currency: checkout.data.currency || priceCurrency,
         name: "BrainCache Pro",
-        description: checkout.data.description || "Unlock unlimited spaces & premium features",
+        description: checkout.data.description || "Unlock premium features & higher space limits",
         order_id: checkout.data.orderId,
         notes: checkout.data.notes || { plan: "pro" },
         prefill: {
@@ -425,7 +429,7 @@ function Dashboard() {
               {plan === "pro" ? "✨ Pro" : "Free Plan"}
             </span>
             <span className="text-gray-500 text-[10px] mt-0.5">
-              {spaceCount}/{spaceLimit}{plan === "pro" ? "+" : ""} spaces
+              {spaceCount}/{spaceLimit} spaces
             </span>
           </div>
           {plan === "free" && (
@@ -521,7 +525,11 @@ function Dashboard() {
                     }`}
                   onClick={() => {
                     if (limitReached && !showSpaceForm) {
-                      setSpaceError("Upgrade to Pro to create more spaces.");
+                      if (plan === "pro") {
+                        setSpaceError("You've reached the space limit for your Pro plan.");
+                      } else {
+                        setSpaceError("Upgrade to Pro to create more spaces.");
+                      }
                       return;
                     }
                     setShowSpaceForm((prev) => !prev);
@@ -755,7 +763,7 @@ function Dashboard() {
           ) : (
             <>
               {filteredContent.length > 0 ? (
-                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-4 gap-4 md:gap-6">
+                <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-3 gap-4 md:gap-6">
                   {filteredContent.map((item, index) => (
                     <div
                       key={index}

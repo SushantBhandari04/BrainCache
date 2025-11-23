@@ -46,7 +46,7 @@ function SpacesPage() {
     const [razorpayReady, setRazorpayReady] = useState(false);
     const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
     const navigate = useNavigate();
-    const atLimit = plan !== "pro" && spaceCount >= spaceLimit;
+    const atLimit = spaceCount >= spaceLimit;
     const upgradeButtonLabel = upgrading
         ? "Processing..."
         : plan === "free"
@@ -125,7 +125,11 @@ function SpacesPage() {
 
     async function createSpace(name: string, description: string) {
         if (atLimit) {
-            setError("You've reached the space limit for the free plan. Upgrade to create more.");
+            if (plan === "pro") {
+                setError("You've reached the space limit for your Pro plan.");
+            } else {
+                setError("You've reached the space limit for the free plan. Upgrade to Pro to create more.");
+            }
             return;
         }
         setSubmitting(true);
@@ -172,7 +176,7 @@ function SpacesPage() {
                 amount: checkout.data.amount,
                 currency: checkout.data.currency || priceCurrency,
                 name: "BrainCache Pro",
-                description: checkout.data.description || "Unlock unlimited spaces & premium features",
+                description: checkout.data.description || "Unlock premium features & higher space limits",
                 order_id: checkout.data.orderId,
                 notes: checkout.data.notes || { plan: "pro" },
                 prefill: {
@@ -242,7 +246,7 @@ function SpacesPage() {
                                         {plan === "pro" ? "Pro" : "Free"}
                                     </span>
                                     <span className="text-gray-500 ml-2">
-                                        {spaceCount}/{plan === "pro" ? "∞" : spaceLimit}
+                                        {spaceCount}/{spaceLimit}
                                     </span>
                                 </div>
                             </div>
@@ -269,7 +273,7 @@ function SpacesPage() {
                                 title={formOpen ? "Close" : "New Space"} 
                                 startIcon={<PlusIcon />} 
                                 onClick={() => setFormOpen(prev => !prev)} 
-                                disabled={plan !== "pro" && atLimit && !formOpen}
+                                disabled={atLimit && !formOpen}
                             />
                         </div>
                     </div>
@@ -408,11 +412,15 @@ function SpacesPage() {
                 )} */}
 
                 {/* Limit Warning */}
-                {plan === "free" && atLimit && (
+                {atLimit && (
                     <div className="mb-4 md:mb-6 rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-800">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                            <span className="flex-1">You've reached the {spaceLimit}-space limit. Upgrade to Pro for unlimited spaces.</span>
-                            {paymentsConfigured && (
+                            <span className="flex-1">
+                                {plan === "pro"
+                                    ? `You've reached the ${spaceLimit}-space limit for your Pro plan.`
+                                    : `You've reached the ${spaceLimit}-space limit on the free plan. Upgrade to Pro to increase your limit.`}
+                            </span>
+                            {plan === "free" && paymentsConfigured && (
                                 <Button 
                                     variant="primary" 
                                     size="sm" 
@@ -486,7 +494,7 @@ function SpacesPage() {
                                     title="Create Your First Space" 
                                     startIcon={<PlusIcon />} 
                                     onClick={() => setFormOpen(true)} 
-                                    disabled={plan === "free" && atLimit} 
+                                    disabled={atLimit} 
                                 />
                             </div>
                         </div>

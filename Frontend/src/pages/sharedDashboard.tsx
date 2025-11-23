@@ -405,7 +405,7 @@ export function SharedDashboard() {
                         </div>
 
                         {filteredContent.length > 0 ? (
-                            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-4 gap-4 md:gap-6">
+                            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-3 gap-4 md:gap-6">
                                 {filteredContent.map((item, index) => (
                                     <div
                                         key={item._id}
