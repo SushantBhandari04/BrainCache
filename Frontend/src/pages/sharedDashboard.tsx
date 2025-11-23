@@ -11,7 +11,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 export function SharedDashboard() {
     interface ContentItem {
         title: string;
-        link: string;
+        link?: string;
         type: Type;
         _id: string;
         body?: string;
@@ -69,7 +69,7 @@ export function SharedDashboard() {
             const query = searchQuery.toLowerCase();
             const matchesSearch =
                 item.title.toLowerCase().includes(query) ||
-                item.link.toLowerCase().includes(query) ||
+                (item.link ? item.link.toLowerCase().includes(query) : false) ||
                 (item.body ? item.body.toLowerCase().includes(query) : false);
             const matchesFilter = activeFilter === "all" || item.type === activeFilter;
             return matchesSearch && matchesFilter;

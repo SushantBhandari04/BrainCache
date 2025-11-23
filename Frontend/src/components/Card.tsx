@@ -65,12 +65,12 @@ export function Card(props: CardProps) {
 
             {/* Content Section */}
             <div className="w-full flex-1 flex flex-col min-h-0">
-                {props.type === "youtube" && (
+                {props.type === "youtube" && props.link && (
                     <div className="flex-1 min-h-0">
                         <YouTubeEmbed link={props.link} />
                     </div>
                 )}
-                {props.type === "twitter" && (
+                {props.type === "twitter" && props.link && (
                     <div className="flex-1 min-h-0">
                         <EmbedTweet tweetLink={props.link} />
                     </div>

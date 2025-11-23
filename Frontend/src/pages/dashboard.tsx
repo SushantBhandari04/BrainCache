@@ -36,7 +36,7 @@ type Space = {
 function Dashboard() {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [content, setContent] = useState<{ title: string; link: string; type: Type; _id: ObjectId; body?: string }[]>([]);
+  const [content, setContent] = useState<{ title: string; link?: string; type: Type; _id: ObjectId; body?: string }[]>([]);
   const [profile, setProfile] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Type | "all">("all");
@@ -380,9 +380,11 @@ function Dashboard() {
   // Filter and search logic
   const filteredContent = useMemo(() => {
     return content.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        item.link.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (item.body ? item.body.toLowerCase().includes(searchQuery.toLowerCase()) : false);
+      const query = searchQuery.toLowerCase();
+      const matchesSearch =
+        item.title.toLowerCase().includes(query) ||
+        (item.link ? item.link.toLowerCase().includes(query) : false) ||
+        (item.body ? item.body.toLowerCase().includes(query) : false);
       const matchesFilter = activeFilter === 'all' || item.type === activeFilter;
       return matchesSearch && matchesFilter;
     });
