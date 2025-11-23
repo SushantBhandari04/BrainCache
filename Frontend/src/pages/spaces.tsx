@@ -562,6 +562,7 @@ function SpacesPage() {
                                 const ownerName = space.sharedBy 
                                     ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
                                     : "Unknown";
+                                const ownerEmail = space.sharedBy ? space.sharedBy.email : "Unknown";
                                 return (
                                     <div 
                                         key={space._id} 
@@ -581,7 +582,10 @@ function SpacesPage() {
                                             ) : (
                                                 <p className="text-xs md:text-sm text-gray-400 italic mb-2">No description</p>
                                             )}
-                                            <p className="text-xs text-indigo-600 mb-4">by {ownerName}</p>
+                                            <div className="flex items-center gap-1">
+                                                <p className="text-xs text-indigo-600 mb-4">by {ownerName}</p>
+                                                <p className="text-xs text-indigo-500 mb-4">({ownerEmail})</p>
+                                            </div>
                                         </div>
                                         <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
                                             <Button 
