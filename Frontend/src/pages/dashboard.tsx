@@ -9,6 +9,8 @@ import { ObjectId } from "mongodb";
 import { Logo } from "../components/Logo";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { ShareModal } from "../components/ShareModal";
+import { ReportContentModal } from "../components/ReportContentModal";
+import { ReportsModal } from "../components/ReportsModal";
 
 declare global {
   interface Window {
@@ -59,6 +61,10 @@ function Dashboard() {
   const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
   const [sharedSpaces, setSharedSpaces] = useState<Space[]>([]);
   const [spaceTab, setSpaceTab] = useState<"my" | "shared">("my");
+  const [reportOpen, setReportOpen] = useState(false);
+  const [reportingContentId, setReportingContentId] = useState<string | null>(null);
+  const [reportingContentTitle, setReportingContentTitle] = useState<string | null>(null);
+  const [reportsOpen, setReportsOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpaceQueryRef = useRef<string | null>(searchParams.get("spaceId"));
@@ -111,6 +117,19 @@ function Dashboard() {
       headers: { Authorization: localStorage.getItem("token") || "" },
     });
     setContent((prev) => prev.filter((item) => item._id !== id));
+  }
+
+  function openReportModal(id: ObjectId) {
+    const item = content.find((c) => c._id === id);
+    setReportingContentId(id.toString());
+    setReportingContentTitle(item?.title || null);
+    setReportOpen(true);
+  }
+
+  function closeReportModal() {
+    setReportOpen(false);
+    setReportingContentId(null);
+    setReportingContentTitle(null);
   }
 
   // sharing actions handled inside ShareModal
@@ -442,6 +461,12 @@ function Dashboard() {
             />
           )}
           <Button
+            variant="secondary"
+            size="md"
+            title="Reports"
+            onClick={() => setReportsOpen(true)}
+          />
+          <Button
             variant="primary"
             size="md"
             title="Add Content"
@@ -771,6 +796,7 @@ function Dashboard() {
                     >
                       <Card
                         onDelete={canEditSpace ? Delete : undefined}
+                        onReport={openReportModal}
                         title={item.title}
                         link={item.link}
                         body={item.body}
@@ -831,6 +857,20 @@ function Dashboard() {
         onShareChange={handleShareChange}
         isSpaceOwner={!selectedSpace?.isShared || false}
       />
+      {reportsOpen && (
+        <ReportsModal
+          open={reportsOpen}
+          onClose={() => setReportsOpen(false)}
+        />
+      )}
+      {reportOpen && (
+        <ReportContentModal
+          open={reportOpen}
+          onClose={closeReportModal}
+          contentId={reportingContentId}
+          contentTitle={reportingContentTitle || undefined}
+        />
+      )}
     </div>
   );
 }

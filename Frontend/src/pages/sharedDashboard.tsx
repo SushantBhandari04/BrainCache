@@ -5,6 +5,7 @@ import { SearchIcon } from "../components/icons";
 import { Type } from "./dashboard";
 import { Logo } from "../components/Logo";
 import axios from "axios";
+import { ReportContentModal } from "../components/ReportContentModal";
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
@@ -34,7 +35,9 @@ export function SharedDashboard() {
     const [ownerName, setOwnerName] = useState<string | null>(null);
     const [ownerEmail, setOwnerEmail] = useState<string | null>(null);
     const [canEdit, setCanEdit] = useState(false);
-    const [spaceId, setSpaceId] = useState<string | null>(null);
+    const [reportOpen, setReportOpen] = useState(false);
+    const [reportingContentId, setReportingContentId] = useState<string | null>(null);
+    const [reportingContentTitle, setReportingContentTitle] = useState<string | null>(null);
     
 
     const resolveOwnerName = (item?: ContentItem) => {
@@ -48,6 +51,19 @@ export function SharedDashboard() {
         if (!item?.userId) return null;
         return item.userId.email || null;
     };
+
+    function handleReport(id: string) {
+        const item = content.find((c) => c._id === id);
+        setReportingContentId(id);
+        setReportingContentTitle(item?.title || null);
+        setReportOpen(true);
+    }
+
+    function closeReportModal() {
+        setReportOpen(false);
+        setReportingContentId(null);
+        setReportingContentTitle(null);
+    }
 
     async function handleDelete(id: string) {
         if (!canEdit) return;
@@ -94,11 +110,6 @@ export function SharedDashboard() {
                 }
 
                 const data = await response.json();
-                
-                // Extract spaceId from response
-                if (data.spaceId) {
-                    setSpaceId(data.spaceId);
-                }
                 
                 // If it's a single item share, we'll get an array with one item
                 if (data.isSingleItem && data.contents && data.contents.length > 0) {
@@ -419,6 +430,7 @@ export function SharedDashboard() {
                                             body={item.body}
                                             type={item.type}
                                             readOnly={!canEdit}
+                                            onReport={(id) => handleReport(id.toString())}
                                             onDelete={canEdit ? (id) => handleDelete(id.toString()) : undefined}
                                         />
                                     </div>
@@ -474,6 +486,14 @@ export function SharedDashboard() {
                     </div>
                 </div>
             </div>
+            {reportOpen && (
+                <ReportContentModal
+                    open={reportOpen}
+                    onClose={closeReportModal}
+                    contentId={reportingContentId}
+                    contentTitle={reportingContentTitle || undefined}
+                />
+            )}
         </div>
     );
 }

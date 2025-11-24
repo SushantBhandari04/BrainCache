@@ -43,6 +43,19 @@ export function Card(props: CardProps) {
                         >
                             <ShareIcon size={4} color={"gray-600"} />
                         </button>
+                        {props.onReport && (
+                            <button
+                                onClick={async (e) => {
+                                    e.stopPropagation();
+                                    await props.onReport?.(props._id);
+                                }}
+                                className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
+                                title="Report this content"
+                                type="button"
+                            >
+                                Report
+                            </button>
+                        )}
                         {props.onDelete && (
                             <div className="p-1 rounded-md hover:bg-red-50 transition-colors">
                                 <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />

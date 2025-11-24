@@ -97,6 +97,16 @@ const SpaceCommentSchema = new Schema({
 // Index for faster queries
 SpaceCommentSchema.index({ spaceId: 1, createdAt: -1 });
 
+const ReportSchema = new Schema({
+    contentId: { type: ObjectId, ref: 'Contents', required: true },
+    reportedBy: { type: ObjectId, ref: 'Users', required: true },
+    reason: { type: String, required: true, maxlength: 500 }
+}, {
+    timestamps: true
+});
+
+ReportSchema.index({ contentId: 1, reportedBy: 1 }, { unique: true });
+
 export const UserModel = model("Users",UserSchema);
 export const ContentModel = model("Contents",ContentSchema);
 export const TagsModel = model("Tags",TagsSchema);
@@ -104,3 +114,4 @@ export const SpaceModel = model("Spaces",SpaceSchema);
 export const LinkModel = model("Links",LinkSchema);
 export const ShareAccessModel = model("ShareAccess", ShareAccessSchema);
 export const SpaceCommentModel = model("SpaceComments", SpaceCommentSchema);
+export const ReportModel = model("Reports", ReportSchema);

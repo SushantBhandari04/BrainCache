@@ -8,5 +8,6 @@ export interface CardProps{
     body?: string,
     _id: ObjectId,
     onDelete?: (id:ObjectId)=>Promise<void>,
-    readOnly?: boolean
+    readOnly?: boolean,
+    onReport?: (id: ObjectId) => void | Promise<void>
 }

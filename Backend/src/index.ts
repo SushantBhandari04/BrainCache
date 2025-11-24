@@ -1,5 +1,5 @@
 import express, {Request, Response} from "express"
-import { ContentModel, LinkModel, SpaceModel, UserModel, ShareAccessModel, SpaceCommentModel } from "./db";
+import { ContentModel, LinkModel, SpaceModel, UserModel, ShareAccessModel, SpaceCommentModel, ReportModel } from "./db";
 import {z} from "zod";
 import path from "path";
 import { Types } from "mongoose";
@@ -106,6 +106,10 @@ const ShareStateSchema = z.object({
 
 const SubscriptionUpdateSchema = z.object({
     plan: z.enum(["free","pro"])
+});
+
+const CreateReportSchema = z.object({
+    reason: z.string().min(1).max(500)
 });
 
 const ConfirmPaymentSchema = z.object({
@@ -857,6 +861,112 @@ app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)
         message: "You don't have permission to delete this content."
     });
 })
+
+app.post("/api/v1/content/:id/report", UserMiddleware, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    const contentId = req.params.id;
+    const idParsed = objectIdSchema.safeParse(contentId);
+    if (!idParsed.success) {
+        res.status(400).json({ message: "Invalid content identifier" });
+        return;
+    }
+
+    const bodyParsed = CreateReportSchema.safeParse(req.body);
+    if (!bodyParsed.success) {
+        res.status(400).json({ message: "Invalid report payload" });
+        return;
+    }
+
+    try {
+        const content = await ContentModel.findById(contentId);
+        if (!content) {
+            res.status(404).json({ message: "Content not found" });
+            return;
+        }
+
+        const existing = await ReportModel.findOne({
+            contentId: content._id,
+            reportedBy: user._id
+        });
+        if (existing) {
+            res.status(200).json({ message: "You have already reported this content. Our team is reviewing it." });
+            return;
+        }
+
+        await ReportModel.create({
+            contentId: content._id,
+            reportedBy: user._id,
+            reason: bodyParsed.data.reason
+        });
+
+        res.status(201).json({ message: "Content reported. Our team will review it." });
+    } catch (error: any) {
+        console.error("Error creating report", error);
+        const message = (error && (error as any).message) ? (error as any).message : "Failed to submit report";
+        res.status(500).json({ message });
+    }
+});
+app.get("/api/v1/reports", UserMiddleware, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    try {
+        const contents = await ContentModel.find({ userId: user._id }).select("_id title type");
+        if (!contents.length) {
+            res.status(200).json({ reports: [], total: 0 });
+            return;
+        }
+
+        const contentIdToMeta = new Map<string, { title: string; type?: string | null }>();
+        const contentIds = contents.map((doc: any) => {
+            const idStr = doc._id.toString();
+            contentIdToMeta.set(idStr, {
+                title: doc.title || "Untitled content",
+                type: doc.type || null
+            });
+            return doc._id;
+        });
+
+        const reports = await ReportModel.find({
+            contentId: { $in: contentIds }
+        }).sort({ createdAt: -1 }).populate("reportedBy", "email firstName lastName");
+
+        const shaped = reports.map((report: any) => {
+            const key = report.contentId ? report.contentId.toString() : "";
+            const meta = contentIdToMeta.get(key);
+            const reporter = report.reportedBy || null;
+            return {
+                _id: report._id,
+                contentId: report.contentId,
+                contentTitle: meta?.title || "Untitled content",
+                contentType: meta?.type || null,
+                reason: report.reason,
+                createdAt: report.createdAt,
+                reportedBy: reporter ? {
+                    email: reporter.email,
+                    firstName: reporter.firstName,
+                    lastName: reporter.lastName
+                } : null
+            };
+        });
+
+        res.status(200).json({
+            reports: shaped,
+            total: shaped.length
+        });
+    } catch (e) {
+        console.error("Failed to load reports", e);
+        res.status(500).json({ message: "Failed to load reports" });
+    }
+});
 app.post("/api/v1/brain/share", UserMiddleware, async (req,res)=>{
     const user = req.user;
     if(!user){
