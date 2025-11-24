@@ -34,6 +34,28 @@ function Signin() {
     setStatus({ type: "success", message });
   }
 
+  async function redirectAfterLogin() {
+    const token = localStorage.getItem("token") || "";
+    if (!token) {
+      navigate("/user/spaces");
+      return;
+    }
+
+    try {
+      const res = await axios.get(`${BACKEND_URL}/api/v1/profile`, {
+        headers: { Authorization: token },
+      });
+      const role = res.data?.role;
+      if (role === "admin") {
+        navigate("/admin");
+      } else {
+        navigate("/user/spaces");
+      }
+    } catch {
+      navigate("/user/spaces");
+    }
+  }
+
   async function handleGoogleAuth(response: CredentialResponse) {
     if (!response.credential) {
       setError("Google sign-in failed. Please try again.");
@@ -48,7 +70,9 @@ function Signin() {
       });
       localStorage.setItem("token", res.data.token);
       setSuccess("Signed in with Google! Redirecting...");
-      setTimeout(() => navigate("/user/spaces"), 600);
+      setTimeout(() => {
+        redirectAfterLogin();
+      }, 600);
     } catch (error: any) {
       const message = error?.response?.data?.message || "Google sign-in failed.";
       setError(message);
@@ -97,7 +121,9 @@ function Signin() {
       const res = await axios.post(`${BACKEND_URL}/api/v1/auth/verify-otp`, payload);
       localStorage.setItem("token", res.data.token);
       setSuccess("Signed in! Redirecting to your spaces...");
-      setTimeout(() => navigate("/user/spaces"), 800);
+      setTimeout(() => {
+        redirectAfterLogin();
+      }, 800);
     } catch (error: any) {
       const message = error?.response?.data?.message || "Unable to verify OTP right now.";
       setError(message);

@@ -796,7 +796,7 @@ function Dashboard() {
                     >
                       <Card
                         onDelete={canEditSpace ? Delete : undefined}
-                        onReport={openReportModal}
+                        onReport={isSharedSpace ? openReportModal : undefined}
                         title={item.title}
                         link={item.link}
                         body={item.body}

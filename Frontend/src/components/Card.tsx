@@ -31,36 +31,39 @@ export function Card(props: CardProps) {
                         {props.title}
                     </h3>
                 </div>
-                {!props.readOnly && (
-                    <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                        <button 
-                            onClick={(e) => {
+                <div className="flex items-center gap-1 flex-shrink-0 ml-2">
+                    {props.onReport && (
+                        <button
+                            onClick={async (e) => {
                                 e.stopPropagation();
-                                setShareModalOpen(true);
+                                await props.onReport?.(props._id);
                             }}
-                            className="text-gray-500 hover:text-violet-600 transition-colors p-1 rounded-md hover:bg-violet-50"
-                            title="Share this content"
+                            className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
+                            title="Report this content"
+                            type="button"
                         >
-                            <ShareIcon size={4} color={"gray-600"} />
+                            Report
                         </button>
-                        {props.onReport && (
-                            <button
-                                onClick={async (e) => {
+                    )}
+                    {!props.readOnly && (
+                        <>
+                            <button 
+                                onClick={(e) => {
                                     e.stopPropagation();
-                                    await props.onReport?.(props._id);
+                                    setShareModalOpen(true);
                                 }}
-                                className="text-xs text-red-500 hover:text-red-600 px-2 py-1 rounded-md hover:bg-red-50 transition-colors"
-                                title="Report this content"
-                                type="button"
+                                className="text-gray-500 hover:text-violet-600 transition-colors p-1 rounded-md hover:bg-violet-50"
+                                title="Share this content"
                             >
-                                Report
+                                <ShareIcon size={4} color={"gray-600"} />
                             </button>
-                        )}
-                        {props.onDelete && (
-                            <div className="p-1 rounded-md hover:bg-red-50 transition-colors">
-                                <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
-                            </div>
-                        )}
+                            {props.onDelete && (
+                                <div className="p-1 rounded-md hover:bg-red-50 transition-colors">
+                                    <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
+                                </div>
+                            )}
+                        </>
+                    )}
                     {/* Share Item Modal */}
                     <ShareItemModal
                         open={shareModalOpen}
@@ -68,10 +71,7 @@ export function Card(props: CardProps) {
                         itemId={props._id.toString()}
                         itemTitle={props.title}
                     />
-
-                    </div>
-                    
-                )}
+                </div>
             </div>
             
             

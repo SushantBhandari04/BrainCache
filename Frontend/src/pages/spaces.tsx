@@ -46,6 +46,7 @@ function SpacesPage() {
     const [razorpayReady, setRazorpayReady] = useState(false);
     const [upgradeMessage, setUpgradeMessage] = useState<string | null>(null);
     const navigate = useNavigate();
+    const [isAdmin, setIsAdmin] = useState(false);
     const atLimit = spaceCount >= spaceLimit;
     const upgradeButtonLabel = upgrading
         ? "Processing..."
@@ -59,10 +60,16 @@ function SpacesPage() {
         setError(null);
         try {
             const token = localStorage.getItem("token") || "";
-            const res = await axios.get(`${BACKEND_URL}/api/v1/spaces`, {
-                params: { includeShared: "true" },
-                headers: { Authorization: token },
-            });
+            const [spacesRes, profileRes] = await Promise.all([
+                axios.get(`${BACKEND_URL}/api/v1/spaces`, {
+                    params: { includeShared: "true" },
+                    headers: { Authorization: token },
+                }),
+                axios.get(`${BACKEND_URL}/api/v1/profile`, {
+                    headers: { Authorization: token },
+                }),
+            ]);
+            const res = spacesRes;
             setSpaces(res.data.spaces || []);
             setSharedSpaces(res.data.sharedSpaces || []);
             setPlan(res.data.plan || "free");
@@ -73,6 +80,9 @@ function SpacesPage() {
                 setPriceCurrency(res.data.price.currency || "INR");
             }
             setPaymentsConfigured(!!res.data.paymentsConfigured);
+
+            const role = profileRes.data?.role;
+            setIsAdmin(role === "admin");
         } catch (e) {
             setError("Unable to load spaces. Please try again.");
         } finally {
@@ -124,6 +134,11 @@ function SpacesPage() {
     }, []);
 
     async function createSpace(name: string, description: string) {
+        if (isAdmin) {
+            setError("Admin accounts cannot create spaces. Please sign in with a regular user account.");
+            return;
+        }
+
         if (atLimit) {
             if (plan === "pro") {
                 setError("You've reached the space limit for your Pro plan.");
@@ -250,7 +265,7 @@ function SpacesPage() {
                                     </span>
                                 </div>
                             </div>
-                            {plan === "free" && paymentsConfigured && (
+                            {!isAdmin && plan === "free" && paymentsConfigured && (
                                 <Button 
                                     variant="secondary" 
                                     size="md" 
@@ -267,14 +282,16 @@ function SpacesPage() {
                                 onClick={() => navigate("/user/dashboard")}
                                 className="hidden sm:inline-flex"
                             />
-                            <Button 
-                                variant="primary" 
-                                size="md" 
-                                title={formOpen ? "Close" : "New Space"} 
-                                startIcon={<PlusIcon />} 
-                                onClick={() => setFormOpen(prev => !prev)} 
-                                disabled={atLimit && !formOpen}
-                            />
+                            {!isAdmin && (
+                                <Button 
+                                    variant="primary" 
+                                    size="md" 
+                                    title={formOpen ? "Close" : "New Space"} 
+                                    startIcon={<PlusIcon />} 
+                                    onClick={() => setFormOpen(prev => !prev)} 
+                                    disabled={atLimit && !formOpen}
+                                />
+                            )}
                         </div>
                     </div>
                 </div>
@@ -311,7 +328,7 @@ function SpacesPage() {
                                 </p>
                             </div>
                             <div className="flex items-center gap-3">
-                                {plan === "free" && paymentsConfigured && (
+                                {!isAdmin && plan === "free" && paymentsConfigured && (
                                     <Button 
                                         variant="primary" 
                                         size="md" 
@@ -435,13 +452,15 @@ function SpacesPage() {
                 )}
 
                 {/* Create Space Modal */}
-                <CreateSpaceModal
-                    open={formOpen}
-                    onClose={() => setFormOpen(false)}
-                    onSubmit={createSpace}
-                    submitting={submitting}
-                    atLimit={atLimit}
-                />
+                {!isAdmin && (
+                    <CreateSpaceModal
+                        open={formOpen}
+                        onClose={() => setFormOpen(false)}
+                        onSubmit={createSpace}
+                        submitting={submitting}
+                        atLimit={atLimit}
+                    />
+                )}
 
                 {/* Tabs */}
                 <div className="mb-6">
@@ -488,14 +507,16 @@ function SpacesPage() {
                                 <p className="text-xs md:text-sm text-gray-600 mb-6">
                                     Create your first space to start organizing your content.
                                 </p>
-                                <Button 
-                                    variant="primary" 
-                                    size="md" 
-                                    title="Create Your First Space" 
-                                    startIcon={<PlusIcon />} 
-                                    onClick={() => setFormOpen(true)} 
-                                    disabled={atLimit} 
-                                />
+                                {!isAdmin && (
+                                    <Button 
+                                        variant="primary" 
+                                        size="md" 
+                                        title="Create Your First Space" 
+                                        startIcon={<PlusIcon />} 
+                                        onClick={() => setFormOpen(true)} 
+                                        disabled={atLimit} 
+                                    />
+                                )}
                             </div>
                         </div>
                     ) : (

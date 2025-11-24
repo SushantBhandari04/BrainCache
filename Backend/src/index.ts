@@ -112,6 +112,10 @@ const CreateReportSchema = z.object({
     reason: z.string().min(1).max(500)
 });
 
+const UpdateReportStatusSchema = z.object({
+    status: z.enum(["pending","resolved","ignored"])
+});
+
 const ConfirmPaymentSchema = z.object({
     orderId: z.string().min(5),
     paymentId: z.string().min(5),
@@ -433,7 +437,8 @@ app.get("/api/v1/profile", UserMiddleware, async (req: Request, res: Response) =
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
-        address: user.address
+        address: user.address,
+        role: (user as any).role || "user"
     })
 })
 
@@ -557,6 +562,10 @@ app.post("/api/v1/spaces", UserMiddleware, async (req: Request, res: Response) =
             res.status(401).json({ message: "Unauthorized" });
             return;
         }
+        if ((user as any).role === "admin") {
+            res.status(403).json({ message: "Admin accounts cannot create spaces. Use a regular user account." });
+            return;
+        }
         const spaceCount = await SpaceModel.countDocuments({ userId: user._id });
         const allowed = getSpaceLimit(user.subscriptionPlan);
         if(spaceCount >= allowed){
@@ -653,6 +662,11 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
 
     if(!user){
         res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
+    if ((user as any).role === "admin") {
+        res.status(403).json({ message: "Admin accounts cannot create content. Use a regular user account." });
         return;
     }
 
@@ -812,33 +826,53 @@ app.get("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
 })
 
 
-app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)=>{
+app.delete("/api/v1/content", UserMiddleware, async (req: Request, res: Response) => {
     const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+
     const userId = user._id;
+    const isAdmin = (user as any).role === "admin";
     const contentId = req.body.id;
 
-    // First check if user owns the content
-    const content = await ContentModel.findOne({_id: contentId});
-    
-    if(!content){
+    if (!contentId) {
+        res.status(400).json({ message: "Content id is required" });
+        return;
+    }
+
+    // First check if content exists
+    const content = await ContentModel.findOne({ _id: contentId });
+    if (!content) {
         res.status(404).json({
             message: "Content not found."
         });
         return;
     }
 
-    // If user owns the content, allow deletion
-    if(content.userId && content.userId.toString() === userId.toString()){
-        await ContentModel.deleteOne({_id: contentId});
+    // Admins can always delete content
+    if (isAdmin) {
+        await ContentModel.deleteOne({ _id: contentId });
+        await ReportModel.deleteMany({ contentId: content._id });
         res.status(200).json({
             message: "Content deleted successfully."
         });
+        return;
+    }
 
+    // If user owns the content, allow deletion
+    if (content.userId && content.userId.toString() === userId.toString()) {
+        await ContentModel.deleteOne({ _id: contentId });
+        await ReportModel.deleteMany({ contentId: content._id });
+        res.status(200).json({
+            message: "Content deleted successfully."
+        });
         return;
     }
 
     // If content doesn't belong to user, check if they have read-write access to the space
-    if(content.spaceId){
+    if (content.spaceId) {
         const shareAccess = await ShareAccessModel.findOne({
             resourceType: 'space',
             resourceId: content.spaceId,
@@ -846,9 +880,10 @@ app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)
             permissions: 'read-write'
         });
 
-        if(shareAccess){
+        if (shareAccess) {
             // User has read-write access, allow deletion
-            await ContentModel.deleteOne({_id: contentId});
+            await ContentModel.deleteOne({ _id: contentId });
+            await ReportModel.deleteMany({ contentId: content._id });
             res.status(200).json({
                 message: "Content deleted successfully."
             });
@@ -860,7 +895,7 @@ app.delete("/api/v1/content", UserMiddleware, async (req: Request,res: Response)
     res.status(403).json({
         message: "You don't have permission to delete this content."
     });
-})
+});
 
 app.post("/api/v1/content/:id/report", UserMiddleware, async (req: Request, res: Response) => {
     const user = req.user;
@@ -886,6 +921,12 @@ app.post("/api/v1/content/:id/report", UserMiddleware, async (req: Request, res:
         const content = await ContentModel.findById(contentId);
         if (!content) {
             res.status(404).json({ message: "Content not found" });
+            return;
+        }
+
+        // Do not allow users to report their own content
+        if (content.userId && content.userId.toString() === user._id.toString()) {
+            res.status(400).json({ message: "You cannot report your own content." });
             return;
         }
 
@@ -918,45 +959,89 @@ app.get("/api/v1/reports", UserMiddleware, async (req: Request, res: Response) =
         return;
     }
 
+    const isAdmin = (user as any).role === "admin";
+
     try {
-        const contents = await ContentModel.find({ userId: user._id }).select("_id title type");
-        if (!contents.length) {
-            res.status(200).json({ reports: [], total: 0 });
-            return;
-        }
-
-        const contentIdToMeta = new Map<string, { title: string; type?: string | null }>();
-        const contentIds = contents.map((doc: any) => {
-            const idStr = doc._id.toString();
-            contentIdToMeta.set(idStr, {
-                title: doc.title || "Untitled content",
-                type: doc.type || null
+        const reports = await ReportModel.find({})
+            .sort({ createdAt: -1 })
+            .populate("reportedBy", "email firstName lastName")
+            .populate({
+                path: "contentId",
+                select: "title type userId spaceId link body",
+                populate: [
+                    { path: "spaceId", select: "name" },
+                    { path: "userId", select: "email firstName lastName" }
+                ]
             });
-            return doc._id;
-        });
 
-        const reports = await ReportModel.find({
-            contentId: { $in: contentIds }
-        }).sort({ createdAt: -1 }).populate("reportedBy", "email firstName lastName");
+        const shaped = reports
+            .map((report: any) => {
+                const content = report.contentId as any;
 
-        const shaped = reports.map((report: any) => {
-            const key = report.contentId ? report.contentId.toString() : "";
-            const meta = contentIdToMeta.get(key);
-            const reporter = report.reportedBy || null;
-            return {
-                _id: report._id,
-                contentId: report.contentId,
-                contentTitle: meta?.title || "Untitled content",
-                contentType: meta?.type || null,
-                reason: report.reason,
-                createdAt: report.createdAt,
-                reportedBy: reporter ? {
-                    email: reporter.email,
-                    firstName: reporter.firstName,
-                    lastName: reporter.lastName
-                } : null
-            };
-        });
+                let ownerId: string | null = null;
+                let ownerUser: any = null;
+
+                if (content && content.userId) {
+                    const rawOwner = content.userId as any;
+                    if (rawOwner && typeof rawOwner === "object" && "_id" in rawOwner) {
+                        ownerId = rawOwner._id ? rawOwner._id.toString() : null;
+                        ownerUser = rawOwner;
+                    } else if (typeof rawOwner === "string") {
+                        ownerId = rawOwner;
+                    } else if (rawOwner && typeof rawOwner.toString === "function") {
+                        ownerId = rawOwner.toString();
+                    }
+                }
+
+                if (!isAdmin && ownerId !== user._id.toString()) {
+                    return null;
+                }
+
+                const reporter = report.reportedBy || null;
+
+                let spaceId: string | null = null;
+                let spaceName: string | null = null;
+
+                if (content && content.spaceId) {
+                    const spaceDoc = content.spaceId as any;
+                    if (spaceDoc && typeof spaceDoc === "object" && ("name" in spaceDoc || "_id" in spaceDoc)) {
+                        spaceId = spaceDoc._id ? spaceDoc._id.toString() : null;
+                        spaceName = spaceDoc.name || null;
+                    } else if (typeof spaceDoc === "string") {
+                        spaceId = spaceDoc;
+                    } else if (spaceDoc && typeof spaceDoc.toString === "function") {
+                        spaceId = spaceDoc.toString();
+                    }
+                }
+
+                const owner = ownerUser ? {
+                    id: ownerId,
+                    email: ownerUser.email || null,
+                    firstName: ownerUser.firstName || null,
+                    lastName: ownerUser.lastName || null
+                } : null;
+
+                return {
+                    _id: report._id,
+                    contentId: content ? content._id : report.contentId,
+                    contentTitle: (content && content.title) || "Untitled content",
+                    contentType: content && content.type ? content.type : null,
+                    spaceId,
+                    spaceName,
+                    contentLink: content && content.link ? content.link : null,
+                    contentBody: content && content.body ? content.body : null,
+                    owner,
+                    status: (report as any).status || "pending",
+                    reason: report.reason,
+                    createdAt: report.createdAt,
+                    reportedBy: reporter ? {
+                        email: reporter.email,
+                        firstName: reporter.firstName,
+                        lastName: reporter.lastName
+                    } : null
+                };
+            })
+            .filter((item: any) => item !== null);
 
         res.status(200).json({
             reports: shaped,
@@ -965,6 +1050,49 @@ app.get("/api/v1/reports", UserMiddleware, async (req: Request, res: Response) =
     } catch (e) {
         console.error("Failed to load reports", e);
         res.status(500).json({ message: "Failed to load reports" });
+    }
+});
+app.patch("/api/v1/reports/:id/status", UserMiddleware, async (req: Request, res: Response) => {
+    const user = req.user;
+    if (!user) {
+        res.status(401).json({ message: "Unauthorized" });
+        return;
+    }
+    if ((user as any).role !== "admin") {
+        res.status(403).json({ message: "Only admin users can update report status." });
+        return;
+    }
+
+    const id = req.params.id;
+    const idParsed = objectIdSchema.safeParse(id);
+    if (!idParsed.success) {
+        res.status(400).json({ message: "Invalid report identifier" });
+        return;
+    }
+
+    const bodyParsed = UpdateReportStatusSchema.safeParse(req.body);
+    if (!bodyParsed.success) {
+        res.status(400).json({ message: "Invalid status payload" });
+        return;
+    }
+
+    try {
+        const updated = await ReportModel.findByIdAndUpdate(id, {
+            status: bodyParsed.data.status
+        }, { new: true });
+
+        if (!updated) {
+            res.status(404).json({ message: "Report not found" });
+            return;
+        }
+
+        res.status(200).json({
+            _id: updated._id,
+            status: (updated as any).status || "pending"
+        });
+    } catch (e) {
+        console.error("Failed to update report status", e);
+        res.status(500).json({ message: "Failed to update report status" });
     }
 });
 app.post("/api/v1/brain/share", UserMiddleware, async (req,res)=>{

@@ -15,7 +15,8 @@ const UserSchema = new Schema({
     otpHash: {type:String},
     otpExpiresAt: {type:Date},
     otpLastSentAt: {type:Date},
-    subscriptionPlan: {type:String, enum: ["free","pro"], default: "free"}
+    subscriptionPlan: {type:String, enum: ["free","pro"], default: "free"},
+    role: {type:String, enum: ["user","admin"], default: "user"}
 }, {
     timestamps: true
 });
@@ -100,7 +101,8 @@ SpaceCommentSchema.index({ spaceId: 1, createdAt: -1 });
 const ReportSchema = new Schema({
     contentId: { type: ObjectId, ref: 'Contents', required: true },
     reportedBy: { type: ObjectId, ref: 'Users', required: true },
-    reason: { type: String, required: true, maxlength: 500 }
+    reason: { type: String, required: true, maxlength: 500 },
+    status: { type: String, enum: ['pending','resolved','ignored'], default: 'pending' }
 }, {
     timestamps: true
 });
