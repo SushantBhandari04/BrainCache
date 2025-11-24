@@ -661,6 +661,39 @@ app.post("/api/v1/content", UserMiddleware, async (req:Request,res:Response)=>{
 
     const { link, type, title, spaceId, body } = parsed.data;
 
+    if (link) {
+        let url;
+        try {
+            url = new URL(link);
+        } catch {
+            res.status(400).json({ message: "Invalid URL format" });
+            return;
+        }
+
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+            res.status(400).json({ message: "Only http and https URLs are allowed" });
+            return;
+        }
+
+        const host = url.hostname.toLowerCase();
+
+        if (type === "youtube") {
+            const allowedYoutubeHosts = ["youtube.com", "www.youtube.com", "youtu.be", "m.youtube.com"];
+            if (!allowedYoutubeHosts.includes(host)) {
+                res.status(400).json({ message: "Only YouTube URLs are allowed for youtube content type" });
+                return;
+            }
+        }
+
+        if (type === "twitter") {
+            const allowedTwitterHosts = ["twitter.com", "www.twitter.com", "x.com", "www.x.com"];
+            if (!allowedTwitterHosts.includes(host)) {
+                res.status(400).json({ message: "Only X/Twitter URLs are allowed for twitter content type" });
+                return;
+            }
+        }
+    }
+
     try{
         // First check if user owns the space
         let space = await SpaceModel.findOne({ _id: spaceId, userId: user._id });

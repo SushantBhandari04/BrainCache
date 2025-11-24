@@ -156,9 +156,14 @@ export function AddContentModal({
                         },
                     });
                     linkValue = uploadRes.data.url;
-                } catch (error) {
+                } catch (error: any) {
                     console.error("Upload failed", error);
-                    setErrorMessage("Failed to upload PDF. Please try again.");
+                    let message: string | null = null;
+                    if (axios.isAxiosError(error) && error.response) {
+                        const data: any = error.response.data || {};
+                        message = data.error || data.message || null;
+                    }
+                    setErrorMessage(message || "Failed to upload PDF. Please try again.");
                     return;
                 } finally {
                     setUploading(false);
@@ -199,9 +204,14 @@ export function AddContentModal({
             setFile(null);
             setErrorMessage(null);
             setOpen(false);
-        } catch (error) {
+        } catch (error: any) {
             console.error("Error saving content", error);
-            setErrorMessage("Failed to save content. Please try again.");
+            let message: string | null = null;
+            if (axios.isAxiosError(error) && error.response) {
+                const data: any = error.response.data || {};
+                message = data.message || data.error || null;
+            }
+            setErrorMessage(message || "Failed to save content. Please try again.");
         } finally {
             setSubmitting(false);
         }
