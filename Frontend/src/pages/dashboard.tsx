@@ -38,8 +38,8 @@ type Space = {
 function Dashboard() {
   const [open, setOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
-  const [content, setContent] = useState<{ title: string; link?: string; type: Type; _id: ObjectId; body?: string }[]>([]);
-  const [profile, setProfile] = useState<{ email: string; firstName?: string; lastName?: string } | null>(null);
+  const [content, setContent] = useState<{ title: string; link?: string; type: Type; _id: ObjectId; body?: string; userId?: any }[]>([]);
+  const [profile, setProfile] = useState<{ _id?: string; email: string; firstName?: string; lastName?: string } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState<Type | "all">("all");
   const [spaces, setSpaces] = useState<Space[]>([]);
@@ -789,23 +789,36 @@ function Dashboard() {
             <>
               {filteredContent.length > 0 ? (
                 <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-3 2xl:columns-3 gap-4 md:gap-6">
-                  {filteredContent.map((item, index) => (
-                    <div
-                      key={index}
-                      className="mb-4 break-inside-avoid transform transition-all duration-300 hover:-translate-y-1"
-                    >
-                      <Card
-                        onDelete={canEditSpace ? Delete : undefined}
-                        onReport={isSharedSpace ? openReportModal : undefined}
-                        title={item.title}
-                        link={item.link}
-                        body={item.body}
-                        type={item.type}
-                        _id={item._id}
-                        readOnly={!canEditSpace}
-                      />
-                    </div>
-                  ))}
+                  {filteredContent.map((item, index) => {
+                    const ownerRaw = (item as any).userId;
+                    const ownerId = ownerRaw
+                      ? typeof ownerRaw === "object"
+                        ? (ownerRaw as any)._id
+                        : ownerRaw
+                      : null;
+                    const currentUserId = profile?._id || null;
+                    const isOwnContent = !!ownerId && !!currentUserId && String(ownerId) === String(currentUserId);
+                    const canShareContent = !isSharedSpace || (canEditSpace && isOwnContent);
+
+                    return (
+                      <div
+                        key={index}
+                        className="mb-4 break-inside-avoid transform transition-all duration-300 hover:-translate-y-1"
+                      >
+                        <Card
+                          onDelete={canEditSpace ? Delete : undefined}
+                          onReport={isSharedSpace ? openReportModal : undefined}
+                          title={item.title}
+                          link={item.link}
+                          body={item.body}
+                          type={item.type}
+                          _id={item._id}
+                          readOnly={!canEditSpace}
+                          canShareContent={canShareContent}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="col-span-full flex flex-col items-center justify-center py-12 md:py-16 text-center bg-white rounded-xl md:rounded-2xl border-2 border-dashed border-gray-300">

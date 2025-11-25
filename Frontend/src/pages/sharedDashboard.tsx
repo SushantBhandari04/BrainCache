@@ -430,6 +430,7 @@ export function SharedDashboard() {
                                             body={item.body}
                                             type={item.type}
                                             readOnly={!canEdit}
+                                            canShareContent={false}
                                             onReport={(id) => handleReport(id.toString())}
                                             onDelete={canEdit ? (id) => handleDelete(id.toString()) : undefined}
                                         />

@@ -14,7 +14,7 @@ export function AddContentModal({
     spaceName
 }: { 
     setOpen: (prop: boolean) => void, 
-    setContent: Dispatch<SetStateAction<{ title: string; link?: string; type: Type; _id: ObjectId; body?: string }[]>>,
+    setContent: Dispatch<SetStateAction<{ title: string; link?: string; type: Type; _id: ObjectId; body?: string; userId?: any }[]>>,
     spaceId: string | null,
     spaceName?: string
 }) {

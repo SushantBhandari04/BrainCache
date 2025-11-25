@@ -434,6 +434,7 @@ app.get("/api/v1/profile", UserMiddleware, async (req: Request, res: Response) =
         return;
     }
     res.status(200).json({
+        _id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -1278,8 +1279,82 @@ app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Re
     res.status(200).json({
         contents
     })
-
 })
+
+// Public endpoint to load shared content by hash (for shared spaces or single items)
+app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
+    const { hash } = req.params;
+
+    try {
+        const link = await LinkModel.findOne({ hash });
+
+        if (!link) {
+            res.status(404).json({ message: "Share link not found" });
+            return;
+        }
+
+        // Single content item share
+        if (link.contentId) {
+            const content = await ContentModel.findById(link.contentId).populate({
+                path: "userId",
+                select: "email firstName lastName"
+            });
+
+            if (!content) {
+                res.status(404).json({ message: "Content not found" });
+                return;
+            }
+
+            res.status(200).json({
+                isSingleItem: true,
+                contents: [content],
+                spaceId: (content as any).spaceId || null
+            });
+            return;
+        }
+
+        // Space/brain share via spaceId
+        if (link.spaceId) {
+            const space = await SpaceModel.findById(link.spaceId);
+            if (!space) {
+                res.status(404).json({ message: "Space not found" });
+                return;
+            }
+
+            const contents = await ContentModel.find({ spaceId: space._id }).populate({
+                path: "userId",
+                select: "email firstName lastName"
+            });
+
+            res.status(200).json({
+                isSingleItem: false,
+                contents,
+                spaceId: space._id
+            });
+            return;
+        }
+
+        // Legacy brain share via userId only
+        if (link.userId) {
+            const contents = await ContentModel.find({ userId: link.userId }).populate({
+                path: "userId",
+                select: "email firstName lastName"
+            });
+
+            res.status(200).json({
+                isSingleItem: false,
+                contents,
+                spaceId: null
+            });
+            return;
+        }
+
+        res.status(404).json({ message: "Share link is invalid or expired" });
+    } catch (error) {
+        console.error("Error loading shared content:", error);
+        res.status(500).json({ message: "Unable to load shared content" });
+    }
+});
 
 // Check or update sharing status for a specific content item
 app.get("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: Response) => {
@@ -1287,11 +1362,40 @@ app.get("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: R
         const contentId = req.params.id;
         const userId = req.user._id;
 
-        // Find the content and verify ownership
-        const content = await ContentModel.findOne({ _id: contentId, userId });
+        const content = await ContentModel.findById(contentId);
         if (!content) {
-             res.status(404).json({ message: "Content not found or access denied" });
+             res.status(404).json({ message: "Content not found" });
              return;
+        }
+
+        // If content belongs to a space, only the space owner can manage sharing
+        if (content.spaceId) {
+            const space = await SpaceModel.findById(content.spaceId);
+            if (!space) {
+                res.status(404).json({ message: "Space not found" });
+                return;
+            }
+
+            const isSpaceOwner = space.userId.toString() === userId.toString();
+
+            if (!isSpaceOwner) {
+                const shareAccess = await ShareAccessModel.findOne({
+                    resourceType: 'space',
+                    resourceId: content.spaceId,
+                    sharedWithId: userId,
+                    permissions: 'read-write'
+                });
+
+                const isContentOwner = content.userId?.toString() === userId.toString();
+
+                if (!shareAccess || !isContentOwner) {
+                    res.status(403).json({ message: "Only the space owner or content owner with edit access can manage sharing for this content" });
+                    return;
+                }
+            }
+        } else if (content.userId?.toString() !== userId.toString()) {
+            res.status(403).json({ message: "Content not found or access denied" });
+            return;
         }
 
         // Check if content is already shared
@@ -1314,10 +1418,39 @@ app.post("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: 
         const userId = req.user._id;
         const { share } = req.body;
 
-        // Find the content and verify ownership
-        const content = await ContentModel.findOne({ _id: contentId, userId });
+        const content = await ContentModel.findById(contentId);
         if (!content) {
              res.status(404).json({ message: "Content not found or access denied" });
+             return;
+        }
+
+        // If content belongs to a space, only the space owner can manage sharing
+        if (content.spaceId) {
+            const space = await SpaceModel.findById(content.spaceId);
+            if (!space) {
+                 res.status(404).json({ message: "Space not found" });
+                 return;
+            }
+
+            const isSpaceOwner = space.userId.toString() === userId.toString();
+
+            if (!isSpaceOwner) {
+                const shareAccess = await ShareAccessModel.findOne({
+                    resourceType: 'space',
+                    resourceId: content.spaceId,
+                    sharedWithId: userId,
+                    permissions: 'read-write'
+                });
+
+                const isContentOwner = content.userId?.toString() === userId.toString();
+
+                if (!shareAccess || !isContentOwner) {
+                     res.status(403).json({ message: "Only the space owner or content owner with edit access can manage sharing for this content" });
+                     return;
+                }
+            }
+        } else if (content.userId?.toString() !== userId.toString()) {
+             res.status(403).json({ message: "Content not found or access denied" });
              return;
         }
 
@@ -1346,117 +1479,6 @@ app.post("/api/v1/content/:id/share", UserMiddleware, async (req: Request, res: 
     } catch (error) {
         console.error("Error updating share status:", error);
         res.status(500).json({ message: "Error updating share status" });
-    }
-});
-
-// Get shared content by hash
-app.get("/api/v1/content/share/:hash", async (req: Request, res: Response) => {
-    try {
-        const { hash } = req.params;
-        
-        // Find the link
-        const link = await LinkModel.findOne({ hash });
-        if (!link) {
-             res.status(404).json({ message: "Shared content not found or link expired" });
-             return
-        }
-
-        // If it's a content-specific share, return just that content
-        if (link.contentId) {
-            const content = await ContentModel.findById(link.contentId).populate({
-                path: "userId",
-                select: "email firstName lastName"
-            });
-            if (!content) {
-                 res.status(404).json({ message: "Content not found" });
-                 return;
-            }
-             res.status(200).json({
-                contents: [content],
-                isSingleItem: true,
-                spaceId: content.spaceId?.toString() || null
-            });
-            return;
-        }
-
-        // If it's a space share, get all content from that space
-        if (link.spaceId) {
-            const contents = await ContentModel.find({ spaceId: link.spaceId }).populate({
-                path: "userId",
-                select: "email firstName lastName"
-            });
-            res.status(200).json({
-                contents,
-                isSingleItem: false,
-                spaceId: link.spaceId.toString()
-            });
-            return;
-        }
-
-        // Otherwise, return all user's content (for backward compatibility)
-        const contents = await ContentModel.find({ userId: link.userId }).populate({
-            path: "userId",
-            select: "email firstName lastName"
-        });
-        res.status(200).json({
-            contents,
-            isSingleItem: false,
-            spaceId: null
-        });
-    } catch (error) {
-        console.error("Error fetching shared content:", error);
-        res.status(500).json({ message: "Error fetching shared content" });
-    }
-});
-
-// Original brain sharing endpoint (kept for backward compatibility)
-app.get("/api/v1/brain/:shareLink", UserMiddleware, async (req: Request, res: Response) => {
-    const hash = req.params.shareLink;
-
-    const link = await LinkModel.findOne({ hash });
-
-    if (!link) {
-        res.status(411).json({
-            message: "No such brain found."
-        });
-        return;
-    }
-
-    const userId = link.userId;
-    const contents = await ContentModel.find({ userId }).populate({
-        path: "userId",
-        select: "email firstName lastName"
-    });
-
-    res.status(200).json({
-        contents,
-        isSingleItem: false
-    });
-});
-
-// User-to-user sharing endpoints
-// Search users by email
-app.get("/api/v1/users/search", UserMiddleware, async (req: Request, res: Response) => {
-    try {
-        const { email } = req.query;
-        const currentUserId = req.user._id;
-
-        if (!email || typeof email !== 'string' || email.length < 3) {
-            res.status(400).json({ message: "Email query must be at least 3 characters" });
-            return;
-        }
-
-        const users = await UserModel.find({
-            email: { $regex: email, $options: 'i' },
-            _id: { $ne: currentUserId } // Exclude current user
-        })
-        .select('email firstName lastName')
-        .limit(10);
-
-        res.status(200).json({ users });
-    } catch (error) {
-        console.error("Error searching users:", error);
-        res.status(500).json({ message: "Error searching users" });
     }
 });
 
@@ -1489,9 +1511,35 @@ app.post("/api/v1/share/with-users", UserMiddleware, async (req: Request, res: R
                 return;
             }
         } else {
-            const content = await ContentModel.findOne({ _id: resourceId, userId: ownerId });
+            const content = await ContentModel.findById(resourceId);
             if (!content) {
                 res.status(404).json({ message: "Content not found or access denied" });
+                return;
+            }
+
+            // If content belongs to a space, check if the user is the space owner or the content owner with edit access
+            if (content.spaceId) {
+                const space = await SpaceModel.findById(content.spaceId);
+                if (!space) {
+                    res.status(404).json({ message: "Space not found" });
+                    return;
+                }
+
+                const isSpaceOwner = space.userId.toString() === ownerId.toString();
+                const isContentOwnerWithEditAccess = content.userId?.toString() === ownerId.toString() && 
+                    (await ShareAccessModel.findOne({
+                        resourceType: 'space',
+                        resourceId: content.spaceId,
+                        sharedWithId: ownerId,
+                        permissions: 'read-write'
+                    }));
+
+                if (!isSpaceOwner && !isContentOwnerWithEditAccess) {
+                    res.status(403).json({ message: "Only the space owner or content owner with edit access can share this content" });
+                    return;
+                }
+            } else if (content.userId?.toString() !== ownerId.toString()) {
+                res.status(403).json({ message: "Content not found or access denied" });
                 return;
             }
         }

@@ -9,5 +9,6 @@ export interface CardProps{
     _id: ObjectId,
     onDelete?: (id:ObjectId)=>Promise<void>,
     readOnly?: boolean,
-    onReport?: (id: ObjectId) => void | Promise<void>
+    onReport?: (id: ObjectId) => void | Promise<void>,
+    canShareContent?: boolean
 }

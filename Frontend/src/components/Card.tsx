@@ -47,16 +47,18 @@ export function Card(props: CardProps) {
                     )}
                     {!props.readOnly && (
                         <>
-                            <button 
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setShareModalOpen(true);
-                                }}
-                                className="text-gray-500 hover:text-violet-600 transition-colors p-1 rounded-md hover:bg-violet-50"
-                                title="Share this content"
-                            >
-                                <ShareIcon size={4} color={"gray-600"} />
-                            </button>
+                            {(props.canShareContent ?? true) && (
+                                <button 
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setShareModalOpen(true);
+                                    }}
+                                    className="text-gray-500 hover:text-violet-600 transition-colors p-1 rounded-md hover:bg-violet-50"
+                                    title="Share this content"
+                                >
+                                    <ShareIcon size={4} color={"gray-600"} />
+                                </button>
+                            )}
                             {props.onDelete && (
                                 <div className="p-1 rounded-md hover:bg-red-50 transition-colors">
                                     <DeleteIcon Id={props._id} onDelete={() => props.onDelete && props.onDelete(props._id)} />
