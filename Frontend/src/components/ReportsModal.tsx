@@ -89,20 +89,20 @@ export function ReportsModal({ open, onClose }: ReportsModalProps) {
 
   return (
     <div
-      className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-4"
+      className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-3 sm:px-4"
       onClick={handleClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="reports-title"
-        className="bg-white w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
+        className="bg-white w-full max-w-2xl sm:max-w-3xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Moderation</p>
-            <h2 id="reports-title" className="text-2xl font-semibold text-gray-900 mt-1">
+            <p className="text-[11px] sm:text-xs uppercase tracking-widest text-gray-500 font-semibold">Moderation</p>
+            <h2 id="reports-title" className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mt-1">
               Content reports
             </h2>
             <p className="text-xs md:text-sm text-gray-500 mt-1">
@@ -118,7 +118,7 @@ export function ReportsModal({ open, onClose }: ReportsModalProps) {
           </button>
         </div>
 
-        <div className="p-6 flex-1 overflow-y-auto">
+        <div className="p-4 sm:p-6 flex-1 overflow-y-auto">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="text-xs text-gray-500">
               <span className="font-semibold text-gray-800">{reports.length}</span>{" "}

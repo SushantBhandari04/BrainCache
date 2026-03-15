@@ -218,12 +218,12 @@ export function AddContentModal({
     }
 
     return (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4 animate-in fade-in" onClick={handleClose}>
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-3 sm:px-4 animate-in fade-in" onClick={handleClose}>
             <div 
                 role="dialog" 
                 aria-modal="true" 
                 aria-labelledby="add-content-title" 
-                className="bg-white w-full max-w-2xl border-2 border-gray-200 rounded-3xl p-8 shadow-2xl animate-in slide-in-from-bottom-4 max-h-[90vh] overflow-y-auto" 
+                className="bg-white w-full max-w-xl sm:max-w-2xl border-2 border-gray-200 rounded-2xl sm:rounded-3xl p-5 sm:p-7 md:p-8 shadow-2xl animate-in slide-in-from-bottom-4 max-h-[90vh] overflow-y-auto" 
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={(e) => { 
                     if (e.key === 'Escape') handleClose();
@@ -231,15 +231,15 @@ export function AddContentModal({
                 }}
             >
                 {(uploading || submitting) && (
-                    <div className="mb-6 h-1.5 w-full bg-gray-100 overflow-hidden rounded-full">
+                    <div className="mb-4 sm:mb-6 h-1.5 w-full bg-gray-100 overflow-hidden rounded-full">
                         <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 animate-pulse rounded-full" style={{ width: '60%' }} />
                     </div>
                 )}
                 
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-5 sm:mb-6">
                     <div>
-                        <h2 id="add-content-title" className="text-3xl font-bold text-gray-900 mb-2">Add Content</h2>
-                        <p className="text-sm text-gray-500">Embed links, upload PDFs, or save web content to your space.</p>
+                        <h2 id="add-content-title" className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-1 sm:mb-2">Add Content</h2>
+                        <p className="text-xs sm:text-sm text-gray-500">Embed links, upload PDFs, or save web content to your space.</p>
                     </div>
                     <button
                         onClick={handleClose}
@@ -250,46 +250,46 @@ export function AddContentModal({
                     </button>
                 </div>
 
-                <div className="mb-6 px-4 py-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-xl border border-violet-200">
-                    <div className="text-xs font-semibold text-violet-600 uppercase tracking-wider mb-1">Saving to</div>
-                    <div className="text-sm font-semibold text-gray-900">{spaceName || "No space selected"}</div>
+                <div className="mb-5 sm:mb-6 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-violet-50 to-indigo-50 rounded-xl border border-violet-200">
+                    <div className="text-[11px] sm:text-xs font-semibold text-violet-600 uppercase tracking-wider mb-0.5 sm:mb-1">Saving to</div>
+                    <div className="text-xs sm:text-sm font-semibold text-gray-900">{spaceName || "No space selected"}</div>
                 </div>
 
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4 sm:gap-5 md:gap-6">
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                             Title <span className="text-red-500">*</span>
                         </label>
                         <input
                             ref={titleRef}
                             type="text"
-                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                            className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-sm"
                             placeholder="e.g. React Best Practices, Important Article..."
                         />
                     </div>
 
                     <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                             Content Type <span className="text-red-500">*</span>
                         </label>
                         <TypeInput 
                             reference={typeRef}
                             onChange={(e) => setSelectedType(e.target.value)}
                         />
-                        <p className="text-xs text-gray-500 mt-2">
+                        <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
                             Choose the type of content you're adding to help organize your space.
                         </p>
                     </div>
 
                     {selectedType !== "document" && selectedType !== "note" && (
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                                 Link <span className="text-red-500">*</span>
                             </label>
                             <input
                                 ref={linkRef}
                                 type="text"
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-sm"
                                 placeholder={
                                     selectedType === 'youtube'
                                         ? "https://www.youtube.com/watch?v=..."
@@ -298,7 +298,7 @@ export function AddContentModal({
                                         : "https://example.com/article"
                                 }
                             />
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
                                 {`Paste a valid ${selectedType === 'youtube' ? 'YouTube' : selectedType === 'twitter' ? 'Twitter/X' : 'web'} URL.`}
                             </p>
                         </div>
@@ -306,16 +306,16 @@ export function AddContentModal({
 
                     {selectedType === 'note' && (
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                                 Note Body <span className="text-red-500">*</span>
                             </label>
                             <textarea
                                 ref={bodyRef}
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none text-sm"
                                 placeholder="Write your note here..."
                                 rows={5}
                             />
-                            <p className="text-xs text-gray-500 mt-2">
+                            <p className="text-[11px] sm:text-xs text-gray-500 mt-1.5 sm:mt-2">
                                 Capture your own thoughts, summaries, or takeaways. Notes are stored directly in BrainCache.
                             </p>
                         </div>
@@ -323,11 +323,11 @@ export function AddContentModal({
 
                     {selectedType === "document" && (
                         <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Upload PDF <span className="text-gray-400 text-xs font-normal">(Max 10MB)</span>
+                            <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
+                                Upload PDF <span className="text-gray-400 text-[11px] sm:text-xs font-normal">(Max 10MB)</span>
                             </label>
                             <div
-                                className={`mt-2 border-2 ${dragOver ? 'border-violet-500 bg-violet-50' : 'border-dashed border-gray-300'} rounded-xl p-8 text-center cursor-pointer transition-all hover:border-violet-400 hover:bg-violet-50/50`}
+                                className={`mt-2 border-2 ${dragOver ? 'border-violet-500 bg-violet-50' : 'border-dashed border-gray-300'} rounded-xl p-5 sm:p-7 md:p-8 text-center cursor-pointer transition-all hover:border-violet-400 hover:bg-violet-50/50`}
                                 onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                                 onDragLeave={() => setDragOver(false)}
                                 onDrop={(e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files && e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]); }}
@@ -335,19 +335,19 @@ export function AddContentModal({
                             >
                                 {!file ? (
                                     <>
-                                        <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
-                                            <DocumentIcon className="size-8 text-violet-600" />
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 bg-gradient-to-br from-violet-100 to-indigo-100 rounded-2xl flex items-center justify-center">
+                                            <DocumentIcon className="size-7 sm:size-8 text-violet-600" />
                                         </div>
-                                        <div className="text-sm font-medium text-gray-700 mb-1">Drag & drop your PDF here</div>
-                                        <div className="text-xs text-gray-500">or click to browse</div>
+                                        <div className="text-xs sm:text-sm font-medium text-gray-700 mb-0.5 sm:mb-1">Drag & drop your PDF here</div>
+                                        <div className="text-[11px] sm:text-xs text-gray-500">or click to browse</div>
                                     </>
                                 ) : (
                                     <div className="flex flex-col items-center gap-3">
-                                        <div className="w-16 h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
-                                            <DocumentIcon className="size-8 text-green-600" />
+                                        <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto bg-green-100 rounded-2xl flex items-center justify-center">
+                                            <DocumentIcon className="size-7 sm:size-8 text-green-600" />
                                         </div>
-                                        <div className="text-sm font-semibold text-gray-800 truncate max-w-full">{file.name}</div>
-                                        <div className="text-xs text-gray-500">{Math.round(file.size / 1024)} KB</div>
+                                        <div className="text-xs sm:text-sm font-semibold text-gray-800 truncate max-w-full">{file.name}</div>
+                                        <div className="text-[11px] sm:text-xs text-gray-500">{Math.round(file.size / 1024)} KB</div>
                                         <button 
                                             className="text-sm text-violet-600 hover:text-violet-700 font-medium underline" 
                                             type="button" 
@@ -370,7 +370,7 @@ export function AddContentModal({
                     )}
 
                     {errorMessage && (
-                        <div className="text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-4 shadow-sm">
+                        <div className="text-xs sm:text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-3 sm:p-4 shadow-sm">
                             <div className="flex items-center gap-2">
                                 <span className="text-red-500 font-semibold">⚠</span>
                                 <span>{errorMessage}</span>

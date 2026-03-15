@@ -162,25 +162,25 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
   if (!open) return null;
 
   const modalContent = (
-    <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-      <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+    <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-3 sm:px-4">
+      <div className="bg-white w-full max-w-md sm:max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100">
           <div>
-            <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Share</p>
-            <h2 className="text-2xl font-semibold text-gray-900 mt-1">Share this content</h2>
+            <p className="text-[11px] sm:text-xs uppercase tracking-widest text-gray-500 font-semibold">Share</p>
+            <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-gray-900 mt-1">Share this content</h2>
           </div>
           <CrossIcon onClick={onClose} />
         </div>
 
-        <div className="p-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1">
           {itemId ? (
             <>
-              <div className="mb-6 flex flex-col gap-2">
-                <p className="text-xs uppercase tracking-wide text-gray-500 font-medium">Content</p>
-                <div className="flex items-start justify-between">
+              <div className="mb-5 sm:mb-6 flex flex-col gap-2">
+                <p className="text-[11px] sm:text-xs uppercase tracking-wide text-gray-500 font-medium">Content</p>
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:gap-3">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{itemTitle || "Untitled content"}</h3>
-                    <p className="text-gray-500 text-sm">Share this content item with others.</p>
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 break-words">{itemTitle || "Untitled content"}</h3>
+                    <p className="text-xs sm:text-sm text-gray-500">Share this content item with others.</p>
                   </div>
                   {isShared ? (
                     <span className="px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-700 bg-green-100 rounded-full">Live</span>
@@ -189,13 +189,13 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
                   )}
                 </div>
               </div>
-              {error && <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">{error}</div>}
+              {error && <div className="text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 mb-4">{error}</div>}
 
               {/* Tabs */}
-              <div className="mb-6 flex gap-2 border-b border-gray-200">
+              <div className="mb-5 sm:mb-6 flex gap-2 border-b border-gray-200 overflow-x-auto">
                 <button
                   onClick={() => setActiveTab("link")}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "link"
                       ? "border-indigo-600 text-indigo-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
@@ -205,7 +205,7 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
                 </button>
                 <button
                   onClick={() => setActiveTab("users")}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  className={`px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors ${
                     activeTab === "users"
                       ? "border-indigo-600 text-indigo-600"
                       : "border-transparent text-gray-500 hover:text-gray-700"
@@ -223,10 +223,10 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
                     </svg>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">Share with Application Users</h3>
-                  <p className="text-gray-600 text-sm mb-6">Share this content directly with other BrainCache users. They'll see it in their dashboard.</p>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-6">Share this content directly with other BrainCache users. They'll see it in their dashboard.</p>
                   <button
                     onClick={() => setUserShareModalOpen(true)}
-                    className="inline-flex items-center justify-center rounded-full bg-indigo-600 text-white px-6 py-2 font-semibold shadow-sm hover:bg-indigo-700 transition"
+                    className="inline-flex items-center justify-center rounded-full bg-indigo-600 text-white px-5 sm:px-6 py-2 text-xs sm:text-sm font-semibold shadow-sm hover:bg-indigo-700 transition"
                   >
                     Manage Users
                   </button>
@@ -234,63 +234,63 @@ export function ShareItemModal({ open, onClose, itemId, itemTitle }: ShareItemMo
               ) : (
                 <>
                   {loading ? (
-                    <div className="text-gray-500 text-sm">Loading share status...</div>
+                    <div className="text-gray-500 text-xs sm:text-sm">Loading share status...</div>
                   ) : isShared ? (
                 <>
-                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
+                  <div className="bg-gray-50 border border-gray-200 rounded-xl p-3 sm:p-4 mb-5 sm:mb-6">
                     <div className="flex items-center gap-3">
                       <LinkBadge />
                       <div className="flex-1">
-                        <p className="text-xs uppercase tracking-wide text-gray-500 font-semibold">Link</p>
-                        <p className="text-sm text-gray-700 break-all font-medium">{shareLink}</p>
+                        <p className="text-[11px] sm:text-xs uppercase tracking-wide text-gray-500 font-semibold">Link</p>
+                        <p className="text-xs sm:text-sm text-gray-700 break-all font-medium">{shareLink}</p>
                       </div>
-                      <button onClick={copyLink} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700">
+                      <button onClick={copyLink} className="flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-blue-600 hover:text-blue-700">
                         Copy
                       </button>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                    <button onClick={shareViaWhatsApp} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-green-300 hover:bg-green-50 transition-all">
+                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-5 sm:mb-6">
+                    <button onClick={shareViaWhatsApp} className="flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-gray-200 p-3 sm:p-4 hover:border-green-300 hover:bg-green-50 transition-all">
                       <WhatsappBadge />
-                      <span className="text-sm font-semibold text-gray-800">WhatsApp</span>
-                      <span className="text-xs text-gray-500">Share chat invite</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-800">WhatsApp</span>
+                      <span className="text-[11px] sm:text-xs text-gray-500">Share chat invite</span>
                     </button>
-                    <button onClick={shareViaTelegram} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-sky-300 hover:bg-sky-50 transition-all">
+                    <button onClick={shareViaTelegram} className="flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-gray-200 p-3 sm:p-4 hover:border-sky-300 hover:bg-sky-50 transition-all">
                       <TelegramBadge />
-                      <span className="text-sm font-semibold text-gray-800">Telegram</span>
-                      <span className="text-xs text-gray-500">Send to channels</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-800">Telegram</span>
+                      <span className="text-[11px] sm:text-xs text-gray-500">Send to channels</span>
                     </button>
-                    <button onClick={shareViaEmail} className="flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
+                    <button onClick={shareViaEmail} className="flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-gray-200 p-3 sm:p-4 hover:border-indigo-300 hover:bg-indigo-50 transition-all">
                       <MailBadge />
-                      <span className="text-sm font-semibold text-gray-800">Email</span>
-                      <span className="text-xs text-gray-500">Send via mail</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-800">Email</span>
+                      <span className="text-[11px] sm:text-xs text-gray-500">Send via mail</span>
                     </button>
-                    <button onClick={nativeShare} disabled={!canUseNativeShare} className={`flex flex-col items-center justify-center gap-2 rounded-xl border border-gray-200 p-4 transition-all ${canUseNativeShare ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
+                    <button onClick={nativeShare} disabled={!canUseNativeShare} className={`flex flex-col items-center justify-center gap-1.5 sm:gap-2 rounded-xl border border-gray-200 p-3 sm:p-4 transition-all ${canUseNativeShare ? "hover:border-purple-300 hover:bg-purple-50" : "opacity-50 cursor-not-allowed"}`}>
                       <SystemBadge />
-                      <span className="text-sm font-semibold text-gray-800">More</span>
-                      <span className="text-xs text-gray-500">Device share sheet</span>
+                      <span className="text-xs sm:text-sm font-semibold text-gray-800">More</span>
+                      <span className="text-[11px] sm:text-xs text-gray-500">Device share sheet</span>
                     </button>
                   </div>
-                  <div className="flex items-center justify-between bg-gray-900 text-white rounded-2xl px-6 py-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-gray-900 text-white rounded-2xl px-4 sm:px-6 py-4 gap-3 sm:gap-4">
                     <div>
-                      <p className="text-sm text-gray-300">Need to take it offline?</p>
-                      <p className="text-lg font-semibold">Stop sharing this content</p>
+                      <p className="text-xs sm:text-sm text-gray-300">Need to take it offline?</p>
+                      <p className="text-sm sm:text-lg font-semibold">Stop sharing this content</p>
                     </div>
-                    <button onClick={() => updateSharing(false)} disabled={updating} className="bg-white text-gray-900 font-semibold rounded-full px-4 py-2 shadow-sm hover:bg-gray-100 transition">
+                    <button onClick={() => updateSharing(false)} disabled={updating} className="bg-white text-gray-900 font-semibold rounded-full px-4 py-2 text-xs sm:text-sm shadow-sm hover:bg-gray-100 transition">
                       Disable sharing
                     </button>
                   </div>
                 </>
               ) : (
-                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-6 text-center">
-                  <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-900/10 text-gray-900 flex items-center justify-center">
-                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">
+                <div className="bg-gray-50 border border-dashed border-gray-300 rounded-2xl p-5 sm:p-6 text-center">
+                  <div className="w-14 h-14 sm:w-16 sm:h-16 mx-auto mb-3 sm:mb-4 rounded-full bg-gray-900/10 text-gray-900 flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 sm:w-7 sm:h-7">
                       <path d="M19 2H9c-1.103 0-2 .897-2 2v2H5c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h10c1.103 0 2-.897 2-2v-2h2c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2Zm-4 18H5V8h10v12Zm4-4h-2V8c0-1.103-.897-2-2-2h-8V4h12v12Z" />
                     </svg>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Content is private</h3>
-                  <p className="text-gray-600 text-sm mb-5">Enable sharing to generate a private link that you can send to others.</p>
-                  <button onClick={() => updateSharing(true)} disabled={updating} className="inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-6 py-2 font-semibold shadow-sm hover:bg-blue-700 transition">
+                  <h3 className="text-sm sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">Content is private</h3>
+                  <p className="text-gray-600 text-xs sm:text-sm mb-4 sm:mb-5">Enable sharing to generate a private link that you can send to others.</p>
+                  <button onClick={() => updateSharing(true)} disabled={updating} className="inline-flex items-center justify-center rounded-full bg-blue-600 text-white px-5 sm:px-6 py-2 text-xs sm:text-sm font-semibold shadow-sm hover:bg-blue-700 transition">
                     {updating ? "Enabling..." : "Enable sharing"}
                   </button>
                 </div>

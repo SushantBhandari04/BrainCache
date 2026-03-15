@@ -1,31 +1,32 @@
 import { Link } from 'react-router-dom';
+import { Footer } from '../components/footer';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed w-full bg-white/95 backdrop-blur-sm shadow-sm z-50">
+      <nav className="fixed inset-x-0 top-0 bg-white/95 backdrop-blur-sm shadow-sm z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+          <div className="flex justify-between h-16 items-center gap-3">
+            <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
               BrainCache
             </h1>
-            <div className="flex items-center space-x-8">
-              <a href="#features" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">
+            <div className="flex items-center gap-3 sm:gap-6 text-xs sm:text-sm">
+              <a href="#features" className="hidden sm:inline-block text-gray-700 hover:text-indigo-600 font-medium transition-colors">
                 Features
               </a>
-              <a href="#how-it-works" className="text-gray-700 hover:text-indigo-600 font-medium transition-colors">
+              <a href="#how-it-works" className="hidden sm:inline-block text-gray-700 hover:text-indigo-600 font-medium transition-colors">
                 How It Works
               </a>
               <Link 
                 to="/user/signin" 
-                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-4 py-2"
+                className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors px-3 sm:px-4 py-2"
               >
                 Sign In
               </Link>
               <Link 
                 to="/user/signup" 
-                className="bg-indigo-600 text-white px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition-colors"
+                className="bg-indigo-600 text-white px-3 sm:px-4 py-2 rounded-md font-medium hover:bg-indigo-700 transition-colors"
               >
                 Get Started
               </Link>
@@ -35,16 +36,16 @@ const LandingPage = () => {
       </nav>
 
       {/* Hero Section */}
-      <header className="pt-24 pb-16 md:pt-32 md:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 to-indigo-100">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center">
-          <div className="md:w-1/2 mb-12 md:mb-0 md:pr-8">
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6">
+      <header className="pt-24 pb-16 md:pt-28 md:pb-24 px-4 sm:px-6 lg:px-8 bg-gradient-to-br from-indigo-50 to-indigo-100">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-10 md:gap-12">
+          <div className="md:w-1/2 mb-8 md:mb-0 md:pr-8">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-4 sm:mb-6">
               Organize. Share. Remember.
             </h1>
-            <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-xl">
+            <p className="text-base sm:text-lg md:text-xl text-gray-600 mb-6 sm:mb-8 max-w-xl">
               BrainCache is your personal knowledge hub for saving and organizing web content, documents, and media in one place.
             </p>
-            <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
+            <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
               <Link 
                 to="/user/signup" 
                 className="bg-indigo-600 text-white px-6 py-3 rounded-md font-medium hover:bg-indigo-700 transition-colors text-center shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
@@ -60,7 +61,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="md:w-1/2 flex justify-center">
-            <div className="relative w-full max-w-xl">
+            <div className="relative w-full max-w-md sm:max-w-lg">
               <div className="bg-white p-2 rounded-xl shadow-2xl border border-gray-100">
                 <div className="bg-gray-800 p-2 rounded-t-lg flex space-x-2">
                   <div className="w-3 h-3 rounded-full bg-red-500"></div>
@@ -85,12 +86,12 @@ const LandingPage = () => {
       </header>
 
       {/* Features Section */}
-      <section id="features" className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
+      <section id="features" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-white">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-10 sm:mb-16 text-gray-900">
             Powerful Features
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 icon: '🌐',
@@ -110,7 +111,7 @@ const LandingPage = () => {
             ].map((feature, index) => (
               <div 
                 key={index}
-                className="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-300"
+                className="bg-white p-5 sm:p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow duration-300"
               >
                 <div className="text-4xl mb-4">{feature.icon}</div>
                 <h3 className="text-xl font-semibold mb-2 text-gray-900">{feature.title}</h3>
@@ -122,12 +123,12 @@ const LandingPage = () => {
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section id="how-it-works" className="py-16 sm:py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
         <div className="max-w-7xl mx-auto">
-          <h2 className="text-3xl md:text-4xl font-bold text-center mb-16 text-gray-900">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-10 sm:mb-16 text-gray-900">
             How It Works
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
             {[
               {
                 number: '1',
@@ -158,10 +159,10 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-16 px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white">
+      <section className="py-14 sm:py-16 px-4 sm:px-6 lg:px-8 bg-indigo-600 text-white">
         <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Ready to organize your digital life?</h2>
-          <p className="text-xl text-indigo-100 mb-8 max-w-2xl mx-auto">
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-3 sm:mb-4">Ready to organize your digital life?</h2>
+          <p className="text-base sm:text-lg md:text-xl text-indigo-100 mb-6 sm:mb-8 max-w-2xl mx-auto">
             Join thousands of users who are already using BrainCache to save and share knowledge.
           </p>
           <Link 
@@ -173,44 +174,7 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="bg-gray-900 text-gray-300 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            <div className="mb-8 md:mb-0">
-              <h2 className="text-2xl font-bold text-white mb-2">BrainCache</h2>
-              <p className="text-indigo-300">Your personal knowledge hub</p>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Product</h4>
-              <ul className="space-y-2">
-                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
-                <li><a href="#how-it-works" className="hover:text-white transition-colors">How It Works</a></li>
-                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Company</h4>
-              <ul className="space-y-2">
-                <li><a href="#about" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#blog" className="hover:text-white transition-colors">Blog</a></li>
-                <li><a href="#careers" className="hover:text-white transition-colors">Careers</a></li>
-              </ul>
-            </div>
-            <div>
-              <h4 className="text-white font-semibold mb-4">Support</h4>
-              <ul className="space-y-2">
-                <li><a href="#help" className="hover:text-white transition-colors">Help Center</a></li>
-                <li><a href="#contact" className="hover:text-white transition-colors">Contact Us</a></li>
-                <li><a href="#privacy" className="hover:text-white transition-colors">Privacy Policy</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="border-t border-gray-800 mt-12 pt-8 text-center text-gray-500">
-            <p>© {new Date().getFullYear()} BrainCache. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 };

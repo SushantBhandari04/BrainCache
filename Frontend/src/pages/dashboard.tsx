@@ -65,6 +65,7 @@ function Dashboard() {
   const [reportingContentId, setReportingContentId] = useState<string | null>(null);
   const [reportingContentTitle, setReportingContentTitle] = useState<string | null>(null);
   const [reportsOpen, setReportsOpen] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialSpaceQueryRef = useRef<string | null>(searchParams.get("spaceId"));
@@ -74,7 +75,7 @@ function Dashboard() {
     const allSpaces = [...spaces, ...sharedSpaces];
     return allSpaces.find((space) => space._id === selectedSpaceId) || null;
   }, [spaces, sharedSpaces, selectedSpaceId]);
-  
+
   const isSharedSpace = useMemo(() => {
     return selectedSpace?.isShared || false;
   }, [selectedSpace]);
@@ -248,6 +249,7 @@ function Dashboard() {
   function handleSpaceSelect(spaceId: string) {
     setSelectedSpaceId(spaceId);
     updateSpaceQueryParam(spaceId);
+    setMobileSidebarOpen(false);
   }
 
   function handleShareChange(spaceId: string, hash: string | null) {
@@ -257,9 +259,7 @@ function Dashboard() {
   }
 
   // Refresh spaces when needed (e.g., after creating a new space)
-  function refreshSpaces() {
-    fetchSpaces();
-  }
+  // (kept internal via fetchSpaces() calls)
 
   useEffect(() => {
     fetchSpaces();
@@ -423,320 +423,378 @@ function Dashboard() {
     { type: 'note', label: 'Notes' }
   ];
 
-  return (
-    <div className="h-screen w-screen font-sans flex flex-col bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
-      {/* Top Bar */}
-      <div className="sticky top-0 z-20 flex justify-between items-center w-full h-fit py-3 md:py-4 bg-white/80 backdrop-blur-md px-4 md:px-6 border-b border-gray-200/50 shadow-sm">
-        <Logo />
-        <div className="flex-1 max-w-2xl mx-4 md:mx-8">
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
-              <SearchIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
-            </div>
-            <input
-              type="text"
-              className="block w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-2.5 border-2 border-gray-200 rounded-lg md:rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-xs md:text-sm shadow-sm"
-              placeholder="Search content by title or link..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-        <div className="flex items-center gap-2 md:gap-3">
-          <div className="hidden md:flex flex-col text-xs pr-3 md:pr-4 border-r border-gray-200">
-            <span className={`font-semibold ${plan === "pro" ? "text-violet-600" : "text-gray-800"}`}>
-              {plan === "pro" ? "✨ Pro" : "Free Plan"}
-            </span>
-            <span className="text-gray-500 text-[10px] mt-0.5">
-              {spaceCount}/{spaceLimit} spaces
-            </span>
-          </div>
-          {plan === "free" && (
-            <Button
-              variant="secondary"
-              size="md"
-              title={upgradeButtonLabel}
-              onClick={upgradePlan}
-              disabled={upgradeDisabled}
-            />
-          )}
-          <Button
-            variant="secondary"
-            size="md"
-            title="Reports"
-            onClick={() => setReportsOpen(true)}
-          />
-          <Button
-            variant="primary"
-            size="md"
-            title="Add Content"
-            startIcon={<PlusIcon />}
-            onClick={() => setOpen(true)}
-            disabled={!selectedSpaceId || !canEditSpace}
-          />
-          <Button
-            variant="secondary"
-            size="md"
-            title="Spaces"
-            onClick={() => navigate("/user/spaces")}
-          />
-          <Button
-            variant="secondary"
-            size="md"
-            title="Share"
-            startIcon={<ShareIcon size={4} color="blue-600" />}
-            onClick={() => setShareOpen(true)}
-            disabled={!selectedSpaceId}
-          />
-          <img
-            src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
-              `${profile?.firstName || ""} ${profile?.lastName || profile?.email || "User"}`.trim()
-            )}`}
-            alt="Profile"
-            title="Profile"
-            className="w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer border-2 border-gray-200 hover:border-violet-400 transition-colors shadow-sm"
-            onClick={() => navigate("/user/profile")}
-          />
-          <Button
-            variant="danger"
-            size="sm"
-            title="Logout"
-            startIcon={<LogoutIcon />}
-            onClick={logout}
-          />
-        </div>
+  const Sidebar = (
+    <div className="w-72 sm:w-80 bg-white/60 backdrop-blur-sm border-r border-gray-200/50 shadow-sm flex flex-col h-full">
+      <div className="p-4 md:p-5">
+        <h2 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Content Types</h2>
+        <nav className="space-y-2">
+          {contentTypes.map((item) => {
+            const count = item.type === 'all'
+              ? content.length
+              : content.filter(c => c.type === item.type).length;
+            return (
+              <button
+                key={item.type}
+                onClick={() => setActiveFilter(item.type)}
+                className={`w-full flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-lg transition-all ${activeFilter === item.type
+                  ? 'bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-700 border-l-4 border-violet-500 shadow-sm'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'
+                  }`}
+              >
+                <span className="truncate">{item.label}</span>
+                <span className={`ml-auto inline-block py-0.5 px-2 text-xs rounded-full font-semibold ${activeFilter === item.type
+                  ? 'bg-violet-100 text-violet-700'
+                  : 'bg-gray-100 text-gray-600'
+                  }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </nav>
       </div>
 
-      <div className="flex flex-1 overflow-hidden">
-        {/* Sidebar */}
-        <div className="w-72 md:w-80 bg-white/60 backdrop-blur-sm border-r border-gray-200/50 overflow-y-auto shadow-sm">
-          <div className="p-4 md:p-5">
-            <h2 className="text-base md:text-lg font-bold text-gray-900 mb-3 md:mb-4">Content Types</h2>
-            <nav className="space-y-2">
-              {contentTypes.map((item) => {
-                const count = item.type === 'all'
-                  ? content.length
-                  : content.filter(c => c.type === item.type).length;
+      <div className="p-4 md:p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
+        <div className="flex items-center justify-between mb-3 md:mb-4">
+          <h2 className="text-lg md:text-xl font-bold text-gray-900">Spaces</h2>
+          {spaceTab === "my" && (
+            <button
+              className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
+                ? "text-gray-400 cursor-not-allowed bg-gray-100"
+                : "text-violet-600 hover:bg-violet-50 hover:text-violet-700"
+                }`}
+              onClick={() => {
+                if (limitReached && !showSpaceForm) {
+                  if (plan === "pro") {
+                    setSpaceError("You've reached the space limit for your Pro plan.");
+                  } else {
+                    setSpaceError("Upgrade to Pro to create more spaces.");
+                  }
+                  return;
+                }
+                setShowSpaceForm((prev) => !prev);
+              }}
+              disabled={limitReached && !showSpaceForm}
+            >
+              {showSpaceForm ? "✕ Close" : "+ New"}
+            </button>
+          )}
+        </div>
+
+        <div className="mb-3 md:mb-4 flex gap-2 border-b border-gray-200">
+          <button
+            onClick={() => setSpaceTab("my")}
+            className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${spaceTab === "my"
+              ? "border-violet-600 text-violet-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            My Spaces ({spaces.length})
+          </button>
+          <button
+            onClick={() => setSpaceTab("shared")}
+            className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${spaceTab === "shared"
+              ? "border-violet-600 text-violet-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+              }`}
+          >
+            Shared ({sharedSpaces.length})
+          </button>
+        </div>
+        {spaceError && (
+          <div className="text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-3 mb-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-red-500">⚠</span>
+              <span>{spaceError}</span>
+            </div>
+          </div>
+        )}
+        {upgradeMessage && (
+          <div className="text-sm text-green-700 bg-green-50 border-l-4 border-green-400 rounded-lg p-3 mb-4 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-green-500">✓</span>
+              <span>{upgradeMessage}</span>
+            </div>
+          </div>
+        )}
+        {!paymentsConfigured && plan === "free" && (
+          <div className="mb-4 rounded-xl bg-amber-50 border-l-4 border-amber-400 px-4 py-3 text-sm text-amber-900 shadow-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-600 font-semibold">ℹ</span>
+              <span>Payments are not yet configured. Please contact support to upgrade to Pro.</span>
+            </div>
+          </div>
+        )}
+        {showSpaceForm && (
+          <div className="mb-4 space-y-3 p-4 bg-white rounded-xl border-2 border-gray-200 shadow-sm">
+            <input
+              type="text"
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
+              placeholder="Space name"
+              value={newSpaceName}
+              onChange={(e) => setNewSpaceName(e.target.value)}
+              maxLength={60}
+            />
+            <textarea
+              className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
+              placeholder="Description (optional)"
+              value={newSpaceDescription}
+              onChange={(e) => setNewSpaceDescription(e.target.value)}
+              maxLength={240}
+              rows={2}
+            />
+            <div className="flex justify-end gap-2 pt-1">
+              <Button variant="secondary" size="sm" title="Cancel" onClick={() => { setShowSpaceForm(false); setNewSpaceName(""); setNewSpaceDescription(""); }} />
+              <Button variant="primary" size="sm" title={creatingSpace ? "Creating..." : "Create"} onClick={handleCreateSpace} disabled={creatingSpace || !newSpaceName.trim()} />
+            </div>
+          </div>
+        )}
+        <div className="space-y-2">
+          {spacesLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-500 rounded-full animate-spin"></div>
+                <span className="text-sm text-gray-500">Loading spaces...</span>
+              </div>
+            </div>
+          ) : spaceTab === "my" ? (
+            spaces.length > 0 ? (
+              spaces.map((space) => (
+                <button
+                  key={space._id}
+                  onClick={() => handleSpaceSelect(space._id)}
+                  className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
+                    ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
+                    : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
+                    }`}
+                >
+                  <div className="flex-1 text-left min-w-0">
+                    <div className="font-semibold truncate mb-0.5">{space.name}</div>
+                    {space.description && (
+                      <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
+                    )}
+                  </div>
+                  {space.shareHash && (
+                    <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-green-200">
+                      Public
+                    </span>
+                  )}
+                </button>
+              ))
+            ) : (
+              <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                <p>No spaces yet.</p>
+                <p className="text-xs mt-1">Create one to get started</p>
+              </div>
+            )
+          ) : (
+            sharedSpaces.length > 0 ? (
+              sharedSpaces.map((space) => {
+                const ownerLabel = space.sharedBy
+                  ? (() => {
+                    const fullName = `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim();
+                    const email = space.sharedBy.email;
+                    if (fullName && email) return `${fullName} (${email})`;
+                    return email || fullName || "Unknown";
+                  })()
+                  : "Unknown";
                 return (
                   <button
-                    key={item.type}
-                    onClick={() => setActiveFilter(item.type)}
-                    className={`w-full flex items-center justify-between px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium rounded-lg transition-all ${activeFilter === item.type
-                        ? 'bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-700 border-l-4 border-violet-500 shadow-sm'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent'
+                    key={space._id}
+                    onClick={() => handleSpaceSelect(space._id)}
+                    className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
+                      ? "border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-900 shadow-md"
+                      : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
                       }`}
                   >
-                    <span className="truncate">{item.label}</span>
-                    <span className={`ml-auto inline-block py-0.5 px-2 text-xs rounded-full font-semibold ${activeFilter === item.type
-                        ? 'bg-violet-100 text-violet-700'
-                        : 'bg-gray-100 text-gray-600'
-                      }`}>
-                      {count}
+                    <div className="flex-1 text-left min-w-0">
+                      <div className="font-semibold truncate mb-0.5">{space.name}</div>
+                      {space.description && (
+                        <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
+                      )}
+                      <div className="text-[10px] md:text-xs text-indigo-600 mt-1">by {ownerLabel}</div>
+                    </div>
+                    <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
+                      Shared
                     </span>
                   </button>
                 );
-              })}
-            </nav>
-          </div>
+              })
+            ) : (
+              <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
+                <p>No shared spaces.</p>
+                <p className="text-xs mt-1">Spaces shared with you will appear here</p>
+              </div>
+            )
+          )}
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="p-4 md:p-5 border-b border-gray-200/50 bg-gradient-to-br from-white to-gray-50/50">
-            <div className="flex items-center justify-between mb-3 md:mb-4">
-              <h2 className="text-lg md:text-xl font-bold text-gray-900">Spaces</h2>
-              {spaceTab === "my" && (
-                <button
-                  className={`text-sm font-semibold px-3 py-1.5 rounded-lg transition-all ${limitReached && !showSpaceForm
-                      ? "text-gray-400 cursor-not-allowed bg-gray-100"
-                      : "text-violet-600 hover:bg-violet-50 hover:text-violet-700"
-                    }`}
-                  onClick={() => {
-                    if (limitReached && !showSpaceForm) {
-                      if (plan === "pro") {
-                        setSpaceError("You've reached the space limit for your Pro plan.");
-                      } else {
-                        setSpaceError("Upgrade to Pro to create more spaces.");
-                      }
-                      return;
-                    }
-                    setShowSpaceForm((prev) => !prev);
-                  }}
-                  disabled={limitReached && !showSpaceForm}
-                >
-                  {showSpaceForm ? "✕ Close" : "+ New"}
-                </button>
-              )}
-            </div>
-
-            {/* Tabs */}
-            <div className="mb-3 md:mb-4 flex gap-2 border-b border-gray-200">
-              <button
-                onClick={() => setSpaceTab("my")}
-                className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${
-                  spaceTab === "my"
-                    ? "border-violet-600 text-violet-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                My Spaces ({spaces.length})
-              </button>
-              <button
-                onClick={() => setSpaceTab("shared")}
-                className={`flex-1 px-2 md:px-3 py-1.5 md:py-2 text-xs md:text-sm font-medium border-b-2 transition-colors ${
-                  spaceTab === "shared"
-                    ? "border-violet-600 text-violet-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                Shared ({sharedSpaces.length})
-              </button>
-            </div>
-            {spaceError && (
-              <div className="text-sm text-red-700 bg-red-50 border-l-4 border-red-400 rounded-lg p-3 mb-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-red-500">⚠</span>
-                  <span>{spaceError}</span>
-                </div>
-              </div>
-            )}
-            {upgradeMessage && (
-              <div className="text-sm text-green-700 bg-green-50 border-l-4 border-green-400 rounded-lg p-3 mb-4 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-green-500">✓</span>
-                  <span>{upgradeMessage}</span>
-                </div>
-              </div>
-            )}
-            {!paymentsConfigured && plan === "free" && (
-              <div className="mb-4 rounded-xl bg-amber-50 border-l-4 border-amber-400 px-4 py-3 text-sm text-amber-900 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-amber-600 font-semibold">ℹ</span>
-                  <span>Payments are not yet configured. Please contact support to upgrade to Pro.</span>
-                </div>
-              </div>
-            )}
-            {showSpaceForm && (
-              <div className="mb-4 space-y-3 p-4 bg-white rounded-xl border-2 border-gray-200 shadow-sm">
-                <input
-                  type="text"
-                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all"
-                  placeholder="Space name"
-                  value={newSpaceName}
-                  onChange={(e) => setNewSpaceName(e.target.value)}
-                  maxLength={60}
-                />
-                <textarea
-                  className="w-full border-2 border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all resize-none"
-                  placeholder="Description (optional)"
-                  value={newSpaceDescription}
-                  onChange={(e) => setNewSpaceDescription(e.target.value)}
-                  maxLength={240}
-                  rows={2}
-                />
-                <div className="flex justify-end gap-2 pt-1">
-                  <Button variant="secondary" size="sm" title="Cancel" onClick={() => { setShowSpaceForm(false); setNewSpaceName(""); setNewSpaceDescription(""); }} />
-                  <Button variant="primary" size="sm" title={creatingSpace ? "Creating..." : "Create"} onClick={handleCreateSpace} disabled={creatingSpace || !newSpaceName.trim()} />
-                </div>
-              </div>
-            )}
-            <div className="space-y-2">
-              {spacesLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-8 h-8 border-3 border-violet-200 border-t-violet-500 rounded-full animate-spin"></div>
-                    <span className="text-sm text-gray-500">Loading spaces...</span>
-                  </div>
-                </div>
-              ) : spaceTab === "my" ? (
-                spaces.length > 0 ? (
-                  spaces.map((space) => (
-                    <button
-                      key={space._id}
-                      onClick={() => handleSpaceSelect(space._id)}
-                      className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
-                          ? "border-violet-500 bg-gradient-to-r from-violet-50 to-indigo-50 text-violet-900 shadow-md"
-                          : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
-                        }`}
-                    >
-                      <div className="flex-1 text-left min-w-0">
-                        <div className="font-semibold truncate mb-0.5">{space.name}</div>
-                        {space.description && (
-                          <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
-                        )}
-                      </div>
-                      {space.shareHash && (
-                        <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-green-700 bg-green-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-green-200">
-                          Public
-                        </span>
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <p>No spaces yet.</p>
-                    <p className="text-xs mt-1">Create one to get started</p>
-                  </div>
-                )
-              ) : (
-                sharedSpaces.length > 0 ? (
-                  sharedSpaces.map((space) => {
-                    const ownerLabel = space.sharedBy 
-                      ? (() => {
-                          const fullName = `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim();
-                          const email = space.sharedBy.email;
-                          if (fullName && email) return `${fullName} (${email})`;
-                          return email || fullName || "Unknown";
-                        })()
-                      : "Unknown";
-                    return (
-                      <button
-                        key={space._id}
-                        onClick={() => handleSpaceSelect(space._id)}
-                        className={`w-full flex items-start gap-2 md:gap-3 px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm rounded-lg border-2 transition-all ${selectedSpaceId === space._id
-                            ? "border-indigo-500 bg-gradient-to-r from-indigo-50 to-blue-50 text-indigo-900 shadow-md"
-                            : "border-transparent text-gray-700 hover:bg-white hover:border-gray-200 hover:shadow-sm"
-                          }`}
-                      >
-                        <div className="flex-1 text-left min-w-0">
-                          <div className="font-semibold truncate mb-0.5">{space.name}</div>
-                          {space.description && (
-                            <div className="text-[10px] md:text-xs text-gray-500 truncate">{space.description}</div>
-                          )}
-                          <div className="text-[10px] md:text-xs text-indigo-600 mt-1">by {ownerLabel}</div>
-                        </div>
-                        <span className="flex-shrink-0 text-[9px] md:text-[10px] uppercase tracking-wide text-indigo-700 bg-indigo-100 px-1.5 md:px-2 py-0.5 rounded-full font-semibold border border-indigo-200">
-                          Shared
-                        </span>
-                      </button>
-                    );
-                  })
-                ) : (
-                  <div className="text-center py-8 text-sm text-gray-500 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-                    <p>No shared spaces.</p>
-                    <p className="text-xs mt-1">Spaces shared with you will appear here</p>
-                  </div>
-                )
-              )}
+  return (
+    <div className="h-screen w-screen font-sans flex flex-col bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20 overflow-x-hidden">
+      {/* Top Bar */}
+      <div className="sticky top-0 z-20 w-full h-fit py-3 md:py-4 bg-white/80 backdrop-blur-md px-4 md:px-6 border-b border-gray-200/50 shadow-sm">
+        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-3 min-w-0">
+            <button
+              type="button"
+              className="md:hidden inline-flex items-center justify-center w-10 h-10 rounded-lg border border-gray-200 bg-white/80 hover:bg-white transition-colors"
+              onClick={() => setMobileSidebarOpen(true)}
+              aria-label="Open sidebar"
+            >
+              <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-700">
+                <path fillRule="evenodd" d="M3.75 6.75A.75.75 0 0 1 4.5 6h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Zm0 5.25a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Zm0 5.25a.75.75 0 0 1 .75-.75h15a.75.75 0 0 1 0 1.5h-15a.75.75 0 0 1-.75-.75Z" clipRule="evenodd" />
+              </svg>
+            </button>
+            <div className="min-w-0">
+              <Logo />
             </div>
           </div>
 
+          <div className="flex flex-wrap items-center gap-2 md:gap-3">
+            <div className="hidden md:flex flex-col text-xs pr-3 md:pr-4 border-r border-gray-200 whitespace-nowrap">
+              <span className={`font-semibold ${plan === "pro" ? "text-violet-600" : "text-gray-800"}`}>
+                {plan === "pro" ? "✨ Pro" : "Free Plan"}
+              </span>
+              <span className="text-gray-500 text-[10px] mt-0.5">
+                {spaceCount}/{spaceLimit} spaces
+              </span>
+            </div>
+            {plan === "free" && (
+              <Button
+                variant="secondary"
+                size="md"
+                title={upgradeButtonLabel}
+                onClick={upgradePlan}
+                disabled={upgradeDisabled}
+                className="whitespace-nowrap h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
+              />
+            )}
+            <Button
+              variant="secondary"
+              size="md"
+              title="Reports"
+              onClick={() => setReportsOpen(true)}
+              className="whitespace-nowrap h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
+            />
+            <Button
+              variant="primary"
+              size="md"
+              title="Add Content"
+              startIcon={<PlusIcon />}
+              onClick={() => setOpen(true)}
+              disabled={!selectedSpaceId || !canEditSpace}
+              className="whitespace-nowrap h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
+            />
+            <Button
+              variant="secondary"
+              size="md"
+              title="Spaces"
+              onClick={() => navigate("/user/spaces")}
+              className="whitespace-nowrap hidden sm:flex h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
+            />
+            <Button
+              variant="secondary"
+              size="md"
+              title="Share"
+              startIcon={<ShareIcon size={4} color="blue-600" />}
+              onClick={() => setShareOpen(true)}
+              disabled={!selectedSpaceId}
+              className="whitespace-nowrap h-9 px-3 text-xs sm:h-10 sm:px-4 sm:text-sm"
+            />
+            <img
+              src={`https://ui-avatars.com/api/?name=${encodeURIComponent(
+                `${profile?.firstName || ""} ${profile?.lastName || profile?.email || "User"}`.trim()
+              )}`}
+              alt="Profile"
+              title="Profile"
+              className="w-8 h-8 md:w-10 md:h-10 rounded-full cursor-pointer border-2 border-gray-200 hover:border-violet-400 transition-colors shadow-sm flex-shrink-0"
+              onClick={() => navigate("/user/profile")}
+            />
+            <Button
+              variant="danger"
+              size="sm"
+              title="Logout"
+              startIcon={<LogoutIcon />}
+              onClick={logout}
+              className="whitespace-nowrap h-8 px-3 text-xs sm:h-9 sm:px-4"
+            />
+          </div>
+
+          <div className="w-full md:flex-1 md:max-w-2xl md:mx-4 lg:mx-8">
+            <div className="relative">
+              <div className="absolute inset-y-0 left-0 pl-3 md:pl-4 flex items-center pointer-events-none">
+                <SearchIcon className="h-4 w-4 md:h-5 md:w-5 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                className="block w-full pl-10 md:pl-12 pr-3 md:pr-4 py-2 md:py-2.5 border-2 border-gray-200 rounded-lg md:rounded-xl leading-5 bg-white/90 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500 transition-all text-xs md:text-sm shadow-sm"
+                placeholder="Search content by title or link..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-1 overflow-hidden min-w-0">
+        {/* Mobile Sidebar Drawer */}
+        <div className={`md:hidden fixed inset-0 z-40 ${mobileSidebarOpen ? "" : "pointer-events-none"}`}>
+          <div
+            className={`absolute inset-0 bg-black/40 transition-opacity ${mobileSidebarOpen ? "opacity-100" : "opacity-0"}`}
+            onClick={() => setMobileSidebarOpen(false)}
+          />
+          <div
+            className={`absolute inset-y-0 left-0 w-full max-w-sm bg-white shadow-2xl transition-transform flex flex-col ${mobileSidebarOpen ? "translate-x-0" : "-translate-x-full"}`}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className="h-14 px-4 flex items-center justify-between border-b border-gray-200">
+              <span className="text-sm font-semibold text-gray-800">Menu</span>
+              <button
+                type="button"
+                className="w-10 h-10 inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white hover:bg-gray-50"
+                onClick={() => setMobileSidebarOpen(false)}
+                aria-label="Close sidebar"
+              >
+                <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 text-gray-700">
+                  <path fillRule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+                </svg>
+              </button>
+            </div>
+            <div className="flex-1 min-h-0 overflow-y-auto">
+              {Sidebar}
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block md:h-full md:min-h-0 md:overflow-y-auto">
+          <div className="h-full">
+            {Sidebar}
+          </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-gray-50/50 to-white">
+        <div className="flex-1 min-w-0 overflow-y-auto p-4 md:p-6 bg-gradient-to-br from-gray-50/50 to-white">
           <div className="mb-4">
-            <div className="flex items-center justify-between mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
                 {activeFilter === 'all' ? 'All Content' : `${activeFilter.charAt(0).toUpperCase() + activeFilter.slice(1)}s`}
                 {searchQuery && (
-                  <span className="text-lg md:text-xl font-normal text-gray-500 ml-2">
+                  <span className="text-sm sm:text-base md:text-xl font-normal text-gray-500 ml-2">
                     matching "{searchQuery}"
                   </span>
                 )}
               </h1>
               {selectedSpace && (
-                <div className={`px-3 md:px-4 py-1.5 md:py-2 rounded-md md:rounded-lg border ${isSharedSpace 
-                  ? "bg-indigo-100 text-indigo-700 border-indigo-200" 
+                <div className={`w-full sm:w-auto px-3 md:px-4 py-1.5 md:py-2 rounded-md md:rounded-lg border ${isSharedSpace
+                  ? "bg-indigo-100 text-indigo-700 border-indigo-200"
                   : "bg-violet-100 text-violet-700 border-violet-200"
-                }`}>
+                  }`}>
                   <span className="text-xs md:text-sm font-semibold">{selectedSpace.name}</span>
                   {isSharedSpace && selectedSpace.sharedBy && (() => {
                     const fullName = `${selectedSpace.sharedBy.firstName || ""} ${selectedSpace.sharedBy.lastName || ""}`.trim();
@@ -860,13 +918,14 @@ function Dashboard() {
         </div>
       </div>
 
+
       {/* Add Content Modal */}
       {open && <AddContentModal setOpen={setOpen} setContent={setContent} spaceId={selectedSpaceId} spaceName={selectedSpace?.name} />}
-      <ShareModal 
-        open={shareOpen} 
-        onClose={() => setShareOpen(false)} 
-        spaceId={selectedSpaceId} 
-        spaceName={selectedSpace?.name} 
+      <ShareModal
+        open={shareOpen}
+        onClose={() => setShareOpen(false)}
+        spaceId={selectedSpaceId}
+        spaceName={selectedSpace?.name}
         onShareChange={handleShareChange}
         isSpaceOwner={!selectedSpace?.isShared || false}
       />

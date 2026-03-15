@@ -6,6 +6,7 @@ import { Button } from "../components/button";
 import { PlusIcon } from "../components/icons";
 import { useNavigate } from "react-router-dom";
 import { CreateSpaceModal } from "../components/CreateSpaceModal";
+import { Footer } from "../components/footer";
 
 declare global {
     interface Window {
@@ -266,29 +267,29 @@ function SpacesPage() {
                                 </div>
                             </div>
                             {!isAdmin && plan === "free" && paymentsConfigured && (
-                                <Button 
-                                    variant="secondary" 
-                                    size="md" 
-                                    title={upgradeButtonLabel} 
-                                    onClick={upgradePlan} 
+                                <Button
+                                    variant="secondary"
+                                    size="md"
+                                    title={upgradeButtonLabel}
+                                    onClick={upgradePlan}
                                     disabled={upgradeDisabled}
                                     className="hidden sm:inline-flex"
                                 />
                             )}
-                            <Button 
-                                variant="secondary" 
-                                size="md" 
-                                title="Dashboard" 
+                            <Button
+                                variant="secondary"
+                                size="md"
+                                title="Dashboard"
                                 onClick={() => navigate("/user/dashboard")}
                                 className="hidden sm:inline-flex"
                             />
                             {!isAdmin && (
-                                <Button 
-                                    variant="primary" 
-                                    size="md" 
-                                    title={formOpen ? "Close" : "New Space"} 
-                                    startIcon={<PlusIcon />} 
-                                    onClick={() => setFormOpen(prev => !prev)} 
+                                <Button
+                                    variant="primary"
+                                    size="md"
+                                    title={formOpen ? "Close" : "New Space"}
+                                    startIcon={<PlusIcon />}
+                                    onClick={() => setFormOpen(prev => !prev)}
                                     disabled={atLimit && !formOpen}
                                 />
                             )}
@@ -329,18 +330,18 @@ function SpacesPage() {
                             </div>
                             <div className="flex items-center gap-3">
                                 {!isAdmin && plan === "free" && paymentsConfigured && (
-                                    <Button 
-                                        variant="primary" 
-                                        size="md" 
-                                        title={upgradeButtonLabel} 
-                                        onClick={upgradePlan} 
+                                    <Button
+                                        variant="primary"
+                                        size="md"
+                                        title={upgradeButtonLabel}
+                                        onClick={upgradePlan}
                                         disabled={upgradeDisabled}
                                     />
                                 )}
-                                <Button 
-                                    variant="secondary" 
-                                    size="md" 
-                                    title="Dashboard" 
+                                <Button
+                                    variant="secondary"
+                                    size="md"
+                                    title="Dashboard"
                                     onClick={() => navigate("/user/dashboard")}
                                     className="sm:hidden"
                                 />
@@ -383,7 +384,7 @@ function SpacesPage() {
                                     <span className="font-medium">{Math.round(usagePercent)}%</span>
                                 </div>
                                 <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                                    <div 
+                                    <div
                                         className="h-full bg-indigo-600 transition-all duration-500 ease-out"
                                         style={{ width: `${usagePercent}%` }}
                                     />
@@ -438,11 +439,11 @@ function SpacesPage() {
                                     : `You've reached the ${spaceLimit}-space limit on the free plan. Upgrade to Pro to increase your limit.`}
                             </span>
                             {plan === "free" && paymentsConfigured && (
-                                <Button 
-                                    variant="primary" 
-                                    size="sm" 
-                                    title={upgradeButtonLabel} 
-                                    onClick={upgradePlan} 
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    title={upgradeButtonLabel}
+                                    onClick={upgradePlan}
                                     disabled={upgradeDisabled}
                                     className="w-full sm:w-auto"
                                 />
@@ -467,21 +468,19 @@ function SpacesPage() {
                     <div className="flex gap-2 border-b border-gray-200">
                         <button
                             onClick={() => setActiveTab("my")}
-                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                activeTab === "my"
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "my"
                                     ? "border-indigo-600 text-indigo-600"
                                     : "border-transparent text-gray-500 hover:text-gray-700"
-                            }`}
+                                }`}
                         >
                             My Spaces ({spaces.length})
                         </button>
                         <button
                             onClick={() => setActiveTab("shared")}
-                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${
-                                activeTab === "shared"
+                            className={`px-6 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === "shared"
                                     ? "border-indigo-600 text-indigo-600"
                                     : "border-transparent text-gray-500 hover:text-gray-700"
-                            }`}
+                                }`}
                         >
                             Shared With Me ({sharedSpaces.length})
                         </button>
@@ -508,13 +507,13 @@ function SpacesPage() {
                                     Create your first space to start organizing your content.
                                 </p>
                                 {!isAdmin && (
-                                    <Button 
-                                        variant="primary" 
-                                        size="md" 
-                                        title="Create Your First Space" 
-                                        startIcon={<PlusIcon />} 
-                                        onClick={() => setFormOpen(true)} 
-                                        disabled={atLimit} 
+                                    <Button
+                                        variant="primary"
+                                        size="md"
+                                        title="Create Your First Space"
+                                        startIcon={<PlusIcon />}
+                                        onClick={() => setFormOpen(true)}
+                                        disabled={atLimit}
                                     />
                                 )}
                             </div>
@@ -522,8 +521,8 @@ function SpacesPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                             {spaces.map((space) => (
-                                <div 
-                                    key={space._id} 
+                                <div
+                                    key={space._id}
                                     className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-300 transition-all duration-200 flex flex-col group"
                                 >
                                     <div className="flex-1">
@@ -544,17 +543,17 @@ function SpacesPage() {
                                         )}
                                     </div>
                                     <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
-                                        <Button 
-                                            variant="primary" 
-                                            size="md" 
-                                            title="Open" 
+                                        <Button
+                                            variant="primary"
+                                            size="md"
+                                            title="Open"
                                             onClick={() => openSpace(space._id)}
                                             className="flex-1"
                                         />
-                                        <Button 
-                                            variant="secondary" 
-                                            size="md" 
-                                            title="Share" 
+                                        <Button
+                                            variant="secondary"
+                                            size="md"
+                                            title="Share"
                                             onClick={() => navigate(`/user/dashboard?spaceId=${space._id}&share=1`)}
                                         />
                                     </div>
@@ -580,13 +579,13 @@ function SpacesPage() {
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5">
                             {sharedSpaces.map((space) => {
-                                const ownerName = space.sharedBy 
+                                const ownerName = space.sharedBy
                                     ? `${space.sharedBy.firstName || ""} ${space.sharedBy.lastName || ""}`.trim() || space.sharedBy.email
                                     : "Unknown";
                                 const ownerEmail = space.sharedBy ? space.sharedBy.email : "Unknown";
                                 return (
-                                    <div 
-                                        key={space._id} 
+                                    <div
+                                        key={space._id}
                                         className="bg-white border border-indigo-200 rounded-lg p-4 md:p-5 hover:shadow-lg hover:border-indigo-400 transition-all duration-200 flex flex-col group"
                                     >
                                         <div className="flex-1">
@@ -609,10 +608,10 @@ function SpacesPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-2 pt-4 border-t border-gray-100">
-                                            <Button 
-                                                variant="primary" 
-                                                size="md" 
-                                                title="Open" 
+                                            <Button
+                                                variant="primary"
+                                                size="md"
+                                                title="Open"
                                                 onClick={() => openSpace(space._id)}
                                                 className="flex-1"
                                             />
@@ -624,6 +623,10 @@ function SpacesPage() {
                     )
                 )}
             </main>
+
+            <div className="mt-20">
+                <Footer />
+            </div>
         </div>
     );
 }

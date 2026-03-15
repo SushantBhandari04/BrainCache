@@ -179,34 +179,34 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-4">
-            <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black/35 backdrop-blur-sm flex justify-center items-center z-50 px-3 sm:px-4">
+            <div className="bg-white w-full max-w-md sm:max-w-2xl rounded-2xl shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-gray-100">
                     <div>
-                        <p className="text-xs uppercase tracking-widest text-gray-500 font-semibold">Share with Users</p>
-                        <h2 className="text-2xl font-semibold text-gray-900 mt-1">
+                        <p className="text-[11px] sm:text-xs uppercase tracking-widest text-gray-500 font-semibold">Share with Users</p>
+                        <h2 className="text-lg sm:text-2xl font-semibold text-gray-900 mt-1">
                             {resourceName || `${resourceType === 'space' ? 'Space' : 'Content'}`}
                         </h2>
                     </div>
                     <CrossIcon onClick={onClose} />
                 </div>
 
-                <div className="p-6 overflow-y-auto flex-1">
+                <div className="p-4 sm:p-6 overflow-y-auto flex-1">
                     {error && (
-                        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
+                        <div className="mb-4 text-xs sm:text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">
                             {error}
                         </div>
                     )}
 
                     {/* Search and Add Users */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <div className="mb-5 sm:mb-6">
+                        <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-1.5 sm:mb-2">
                             Search users by email
                         </label>
                         <div className="relative">
                             <input
                                 type="text"
-                                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                className="w-full px-3 sm:px-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
                                 placeholder="Enter email address..."
                                 value={searchQuery}
                                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -220,11 +220,11 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
 
                         {/* Default Permission Selector */}
                         {selectedUsers.length > 0 && (
-                            <div className="mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            <div className="mt-3 sm:mt-4 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
+                                <label className="block text-xs sm:text-sm font-semibold text-gray-700 mb-2">
                                     Default Access Level
                                 </label>
-                                <div className="flex gap-4">
+                                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="radio"
@@ -236,7 +236,7 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                         />
                                         <div>
                                             <span className="text-sm font-medium text-gray-900">Read Only</span>
-                                            <p className="text-xs text-gray-500">Can view content but cannot edit</p>
+                                            <p className="text-xs text-gray-500">Can view but cannot edit</p>
                                         </div>
                                     </label>
                                     <label className="flex items-center gap-2 cursor-pointer">
@@ -250,7 +250,7 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                         />
                                         <div>
                                             <span className="text-sm font-medium text-gray-900">Edit Access</span>
-                                            <p className="text-xs text-gray-500">Can view and edit content</p>
+                                            <p className="text-xs text-gray-500">Can view and edit</p>
                                         </div>
                                     </label>
                                 </div>
@@ -264,10 +264,10 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                     <button
                                         key={user._id}
                                         onClick={() => addUser(user)}
-                                        className="w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                                        className="w-full px-4 py-2.5 text-left hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
                                     >
-                                        <div className="font-medium text-gray-900">{getUserDisplayName(user)}</div>
-                                        <div className="text-sm text-gray-500">{user.email}</div>
+                                        <div className="font-medium text-gray-900 text-sm">{getUserDisplayName(user)}</div>
+                                        <div className="text-xs text-gray-500">{user.email}</div>
                                     </button>
                                 ))}
                             </div>
@@ -275,8 +275,8 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
 
                         {/* Selected Users */}
                         {selectedUsers.length > 0 && (
-                            <div className="mt-4">
-                                <p className="text-sm font-medium text-gray-700 mb-2">Selected users:</p>
+                            <div className="mt-3 sm:mt-4">
+                                <p className="text-xs sm:text-sm font-medium text-gray-700 mb-2">Selected users:</p>
                                 <div className="flex flex-wrap gap-2">
                                     {selectedUsers.map((user) => (
                                         <div
@@ -298,7 +298,7 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                 <button
                                     onClick={handleShare}
                                     disabled={sharing}
-                                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="mt-3 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-xs sm:text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {sharing ? "Sharing..." : `Share with ${selectedUsers.length} user${selectedUsers.length > 1 ? 's' : ''}`}
                                 </button>
@@ -308,29 +308,29 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
 
                     {/* Shared Users List */}
                     <div>
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
                             Shared with ({sharedUsers.length})
                         </h3>
                         {loading ? (
-                            <div className="text-center py-8 text-gray-500">Loading...</div>
+                            <div className="text-center py-8 text-xs sm:text-sm text-gray-500">Loading...</div>
                         ) : sharedUsers.length === 0 ? (
                             <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                                <p className="text-sm">No users have access yet.</p>
-                                <p className="text-xs mt-1">Search and add users above to share.</p>
+                                <p className="text-xs sm:text-sm">No users have access yet.</p>
+                                <p className="text-[11px] sm:text-xs mt-1">Search and add users above to share.</p>
                             </div>
                         ) : (
                             <div className="space-y-2">
                                 {sharedUsers.map((shared) => (
                                     <div
                                         key={shared.userId._id}
-                                        className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-lg border border-gray-200"
+                                        className="flex items-center justify-between px-3 sm:px-4 py-3 bg-gray-50 rounded-lg border border-gray-200"
                                     >
                                         <div className="flex-1">
-                                            <div className="font-medium text-gray-900">
+                                            <div className="font-medium text-gray-900 text-sm">
                                                 {getUserDisplayName(shared.userId)}
                                             </div>
-                                            <div className="text-sm text-gray-500">{shared.userId.email}</div>
-                                            <div className="text-xs text-gray-400 mt-1">
+                                            <div className="text-xs text-gray-500">{shared.userId.email}</div>
+                                            <div className="text-[11px] text-gray-400 mt-1">
                                                 Shared {new Date(shared.sharedAt).toLocaleDateString()}
                                             </div>
                                         </div>
@@ -353,7 +353,7 @@ export function ShareWithUsersModal({ open, onClose, resourceType, resourceId, r
                                             <button
                                                 onClick={() => handleRemoveShare(shared.userId._id)}
                                                 disabled={removing === shared.userId._id}
-                                                className="px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
+                                                className="px-3 py-1.5 text-xs sm:text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50"
                                             >
                                                 {removing === shared.userId._id ? "Removing..." : "Remove"}
                                             </button>

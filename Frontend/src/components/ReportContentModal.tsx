@@ -88,24 +88,24 @@ export function ReportContentModal({ open, onClose, contentId, contentTitle }: R
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-4 animate-in fade-in"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 px-3 sm:px-4 animate-in fade-in"
       onClick={handleClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="report-content-title"
-        className="bg-white w-full max-w-lg border-2 border-gray-200 rounded-3xl p-6 md:p-7 shadow-2xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4"
+        className="bg-white w-full max-w-md sm:max-w-lg border-2 border-gray-200 rounded-2xl sm:rounded-3xl p-5 md:p-6 shadow-2xl max-h-[90vh] overflow-y-auto animate-in slide-in-from-bottom-4"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={(e) => {
           if (e.key === "Escape") handleClose();
         }}
       >
-        <div className="flex items-start justify-between mb-5">
+        <div className="flex items-start justify-between mb-4 sm:mb-5">
           <div>
             <h2
               id="report-content-title"
-              className="text-2xl font-bold text-gray-900 mb-1"
+              className="text-xl sm:text-2xl font-bold text-gray-900 mb-1"
             >
               Report content
             </h2>

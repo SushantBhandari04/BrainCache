@@ -2015,6 +2015,20 @@ app.use("/api/v1/upload", uploadRouter);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
-app.listen(3000, ()=>{
-    console.log("Server is running on port 3000");
-});
+import { connectDB } from "./db"; // wherever this file is
+
+async function startServer() {
+    try {
+      await connectDB(); // connect database first
+  
+      app.listen(3000, () => {
+        console.log("🚀 Server running on port 3000");
+      });
+  
+    } catch (error) {
+      console.error("Server failed to start:", error);
+      process.exit(1);
+    }
+  }
+  
+  startServer();

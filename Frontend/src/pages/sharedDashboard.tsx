@@ -267,36 +267,36 @@ export function SharedDashboard() {
     }
 
     return (
-        <div className=" bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20">
+        <div className="min-h-screen bg-gradient-to-br from-gray-50 via-indigo-50/20 to-purple-50/20 overflow-x-hidden">
             {/* Header */}
             <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-gray-200/50 shadow-sm">
-                <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                        <div className="flex items-center gap-4">
+                <div className="max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-4 md:py-5">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-4">
+                        <div className="flex items-center gap-3 md:gap-4 min-w-0">
                             <Logo />
                             <div className="hidden sm:block h-8 w-px bg-gray-300"></div>
                             <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-900 mb-0.5">
+                                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 mb-0.5">
                                     {isSingleItem ? 'Shared Content' : 'Shared Brain'}
                                 </h1>
                                 {ownerName && (
-                                    <p className="text-sm text-gray-500">
+                                    <p className="text-xs sm:text-sm text-gray-500">
                                         Shared by <span className="font-medium text-gray-700">{ownerName}</span>
                                         {ownerEmail && <span className="text-gray-800 text-xs"> ( {ownerEmail} )</span>}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                             <a
                                 href="/"
-                                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+                                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
                             >
                                 Home
                             </a>
                             <a
                                 href="/user/signin"
-                                className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+                                className="px-3 sm:px-4 py-2 text-xs sm:text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
                             >
                                 Sign In
                             </a>
@@ -305,16 +305,16 @@ export function SharedDashboard() {
                 </div>
             </div>
 
-            <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8 overflow-x-hidden">
+            <div className="max-w-5xl lg:max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 md:py-8">
                 {/* Search Bar */}
                 <div className="mb-6">
                     <div className="relative max-w-2xl">
-                        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                        <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                             <SearchIcon className="h-5 w-5 text-gray-400" />
                         </div>
                         <input
                             type="text"
-                            className="block w-full pl-12 pr-4 py-3 border-2 border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm shadow-sm transition-all"
+                            className="block w-full pl-11 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 border-2 border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm shadow-sm transition-all"
                             placeholder="Search content by title or link..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -335,12 +335,12 @@ export function SharedDashboard() {
                 <div className="flex flex-col lg:flex-row gap-6">
                     {/* Sidebar with filters */}
                     <div className="w-full lg:w-64 flex-shrink-0">
-                        <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 p-5 shadow-sm">
-                            <h2 className="text-lg font-bold text-gray-900 mb-4">Content Types</h2>
+                        <div className="bg-white/60 backdrop-blur-sm rounded-xl border border-gray-200/50 p-4 sm:p-5 shadow-sm">
+                            <h2 className="text-base sm:text-lg font-bold text-gray-900 mb-3 sm:mb-4">Content Types</h2>
                             <nav className="space-y-2">
                                 <button
                                     onClick={() => setActiveFilter("all")}
-                                    className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                                    className={`w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all ${
                                         activeFilter === "all"
                                             ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-l-4 border-indigo-500 shadow-sm"
                                             : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent"
@@ -348,7 +348,7 @@ export function SharedDashboard() {
                                 >
                                     <span>All Content</span>
                                     <span
-                                        className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                        className={`ml-auto inline-block py-0.5 px-2 text-[11px] sm:text-xs rounded-full font-semibold ${
                                             activeFilter === "all"
                                                 ? "bg-indigo-100 text-indigo-700"
                                                 : "bg-gray-100 text-gray-600"
@@ -373,7 +373,7 @@ export function SharedDashboard() {
                                         <button
                                             key={type}
                                             onClick={() => setActiveFilter(type)}
-                                            className={`w-full flex items-center justify-between px-4 py-3 text-sm font-medium rounded-xl transition-all ${
+                                            className={`w-full flex items-center justify-between px-3 sm:px-4 py-2.5 sm:py-3 text-xs sm:text-sm font-medium rounded-xl transition-all ${
                                                 activeFilter === type
                                                     ? "bg-gradient-to-r from-indigo-50 to-purple-50 text-indigo-700 border-l-4 border-indigo-500 shadow-sm"
                                                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900 border-l-4 border-transparent"
@@ -381,7 +381,7 @@ export function SharedDashboard() {
                                         >
                                             <span>{label}</span>
                                             <span
-                                                className={`ml-auto inline-block py-1 px-2.5 text-xs rounded-full font-semibold ${
+                                                className={`ml-auto inline-block py-0.5 px-2 text-[11px] sm:text-xs rounded-full font-semibold ${
                                                     activeFilter === type
                                                         ? "bg-indigo-100 text-indigo-700"
                                                         : "bg-gray-100 text-gray-600"
@@ -397,8 +397,8 @@ export function SharedDashboard() {
                     </div>
 
                     {/* Main content */}
-                    <div className="w-4/5">
-                        <div className="mb-5 flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                        <div className="mb-4 sm:mb-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                             <div>
                                 <p className="text-sm text-gray-600 flex items-center gap-2">
                                     <span className="font-semibold text-gray-900">{filteredContent.length}</span>

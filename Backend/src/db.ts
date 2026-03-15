@@ -4,7 +4,15 @@ dotenv.config();
 import mongoose, { model } from "mongoose"
 const Schema = mongoose.Schema;
 const ObjectId = mongoose.Types.ObjectId;
-mongoose.connect(process.env.MONGO_URI || "");
+export const connectDB = async () => {
+    try {
+      await mongoose.connect(process.env.MONGO_URI as string);
+      console.log("✅ MongoDB connected");
+    } catch (err) {
+      console.error("❌ MongoDB connection failed:", err);
+      process.exit(1);
+    }
+  };
 
 const UserSchema = new Schema({
     email: {type:String, required:true, unique:true},
