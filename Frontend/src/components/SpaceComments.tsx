@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { BACKEND_URL } from "../config";
-import { CrossIcon } from "./icons";
 
 type Comment = {
     _id: string;
@@ -25,7 +24,7 @@ type SpaceCommentsProps = {
     isSpaceOwner: boolean;
 };
 
-export function SpaceComments({ spaceId, spaceName, isSpaceOwner }: SpaceCommentsProps) {
+export function SpaceComments({ spaceId, spaceName: _spaceName, isSpaceOwner }: SpaceCommentsProps) {
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(false);
     const [submitting, setSubmitting] = useState(false);

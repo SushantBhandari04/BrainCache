@@ -8,6 +8,7 @@ import Profile from "./pages/profile"
 import LandingPage from "./pages/LandingPage"
 import SpacesPage from "./pages/spaces"
 import AdminDashboard from "./pages/adminDashboard"
+import { ChatbotWidget } from "./components/ChatbotWidget"
 
 function App(){
     return <>
@@ -24,6 +25,8 @@ function App(){
                     <Route path="/admin" element={<AdminDashboard/>}/>
                 </Route>
             </Routes>
+            {/* Global AI chatbot — shows on dashboard, spaces, and shared views */}
+            <ChatbotWidget />
         </BrowserRouter>
     </>
 }
