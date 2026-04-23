@@ -2010,6 +2010,41 @@ if (!fs.existsSync(uploadDir)) {
 
 import uploadRouter from "./routes/upload"; // Import upload route
 
+// ── Chatbot Proxy ─────────────────────────────────────────────────────────────
+// Forwards requests to the RAG chatbot service server-side, so the browser
+// never makes a cross-origin request (avoids CORS entirely).
+const CHATBOT_API_URL = "https://braincache-bot.onrender.com/chat";
+const CHATBOT_API_KEY = "dinesh-chatbot-key";
+
+app.post("/api/v1/chatbot", async (req: Request, res: Response) => {
+    try {
+        const { query, userId, spaceId } = req.body;
+        if (!query || typeof query !== "string" || !query.trim()) {
+            res.status(400).json({ message: "query is required" });
+            return;
+        }
+
+        const body: Record<string, unknown> = { query: query.trim() };
+        if (userId) body.userId = userId;
+        if (spaceId) body.spaceId = spaceId;
+
+        const upstream = await fetch(CHATBOT_API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-API-Key": CHATBOT_API_KEY,
+            },
+            body: JSON.stringify(body),
+        });
+
+        const data = await upstream.json();
+        res.status(upstream.status).json(data);
+    } catch (error) {
+        console.error("[Chatbot Proxy] Error:", error);
+        res.status(502).json({ message: "Unable to reach chatbot service. Please try again." });
+    }
+});
+
 // API Routes
 app.use("/api/v1/upload", uploadRouter); 
 
